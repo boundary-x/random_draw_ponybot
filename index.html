@@ -23,7 +23,6 @@
             font-family: var(--font-main) !important; 
         }
         
-        /* 3D Card Flip CSS */
         .card-perspective { perspective: 1000px; }
         .card-inner {
             transform-style: preserve-3d;
@@ -46,18 +45,9 @@
             color: #fff;
         }
         .bx-btn-black:hover {
-            background-color: #222;
+            background-color: #333;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-        .bx-btn-primary {
-            background-color: #1A73E8;
-            color: #fff;
-        }
-        .bx-btn-primary:hover {
-            background-color: #1557B0;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
@@ -67,39 +57,50 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        const FUNC_CARDS = [
-            { name: '네오픽셀 LED', emoji: '🌈', desc: '화려한 빛과 색상을 자유롭게 표현하는 출력 소자' },
-            { name: 'OLED 디스플레이', emoji: '📺', desc: '글자나 숫자, 데이터를 화면에 명확하게 보여주는 출력 소자' },
-            { name: '스피커 (멜로디)', emoji: '🔊', desc: '효과음, 경고음이나 신나는 음악 멜로디를 재생하는 출력 소자' },
-            { name: '터치 센서', emoji: '👆', desc: '사람의 손가락이나 전도성 물체의 접촉을 감지하는 입력 소자' },
-            { name: '소리 입력 (마이크)', emoji: '🎵', desc: '주변 소음의 크기나 소리 발생 여부를 감지하는 마이크 입력 소자' },
-            { name: '음성 인식', emoji: '🗣️', desc: '특정 말소리나 음성 명령어를 구별해 반응하는 지능형 기능' },
-            { name: '모델 학습 (AI)', emoji: '🧠', desc: '티처블머신 등으로 사물, 포즈, 데이터를 학습시켜 인식하는 기능' },
-            { name: '가속도(모션) 센서', emoji: '📡', desc: '마이크로비트의 흔들림, 기울임, 움직임을 감지하는 입력 소자' },
-            { name: '빛 센서', emoji: '🔆', desc: '주변 환경의 밝고 어두운 정도를 측정하는 입력 소자' },
-            { name: '버튼 입력 (A / B)', emoji: '🔘', desc: '사용자가 딸깍 눌러서 신호를 주는 가장 직관적인 입력 소자' },
-            { name: '온도 센서', emoji: '🌡️', desc: '주변의 현재 열기나 온도를 측정하는 입력 소자' },
-            { name: '라디오 통신', emoji: '📻', desc: '다른 마이크로비트 장치들과 무선 신호를 송수신하는 통신 기능' },
+        // 1. 지능 카드 (입력)
+        const INTEL_CARDS = [
+            { name: '음성 인식 (음성 지능)', emoji: '🗣️', desc: '사람의 음성을 인식하고 명령어를 전달해요.' },
+            { name: '포즈 인식 (시각 지능)', emoji: '🧘', desc: '사람의 포즈 데이터를 학습하고 분류해요.' },
         ];
 
+        // 2. 기능 카드 (출력)
+        const FUNC_CARDS = [
+            { name: '포니봇 모터', emoji: '🤖', desc: '모바일 이동형 로봇으로 자유롭게 이동할 수 있어요.' },
+            { name: '서보 모터', emoji: '🦾', desc: '관절형 로봇으로 물체를 집거나 옮길 수 있어요.' },
+        ];
+
+        // 3. 상황 카드 (환경 특성 묘사 중심 - 20종)
         const SIT_CARDS = [
-            { name: '학교 교실', emoji: '🏫', desc: '친구들과 함께 공부하고 쉬는 우리들의 주 생활 공간' },
-            { name: '학교 급식실', emoji: '🍚', desc: '맛있게 밥을 먹지만 차례를 지키고 복잡할 수 있는 공간' },
-            { name: '학교 화장실', emoji: '🧼', desc: '위생이 중요하고 혼자 이용할 때 안전이나 배려가 필요한 공간' },
-            { name: '학교 운동장', emoji: '⚽', desc: '체육 활동을 하거나 신나게 뛰어노는 넓은 야외 공간' },
-            { name: '도서관', emoji: '📖', desc: '조용히 책을 읽거나 자료를 찾는 정숙한 공간' },
-            { name: '지하철', emoji: '🚇', desc: '사람이 많고 복잡하며 안내가 중요한 대중교통 공간' },
-            { name: '침실', emoji: '🛌', desc: '하루를 마무리하고 편안하게 잠자리에 드는 조용한 공간' },
-            { name: '카페', emoji: '☕', desc: '음악이 흐르고 편안하게 대화를 나누거나 휴식하는 공간' },
-            { name: '주방', emoji: '🍳', desc: '불과 칼을 사용해 요리하며 바쁘게 움직이는 위험한 공간' },
-            { name: '야외 캠핑', emoji: '⛺', desc: '자연 속에서 텐트를 치고 밤을 보내는 감성적인 공간' },
+            { name: '화재 현장', emoji: '🔥', desc: '뜨거운 열기와 짙은 연기로 인해 시야 확보가 매우 어려운 붕괴 위험 구역' },
+            { name: '지진 현장', emoji: '🏚️', desc: '바닥이 불안정하고 사방에 잔해물이 흩어져 있어 이동이 제한된 구역' },
+            { name: '전쟁터', emoji: '🛡️', desc: '언제 어디서 위험 요소가 발생할지 예측하기 힘든 긴장된 야외 환경' },
+            { name: '횡단보도', emoji: '🚦', desc: '차량과 보행자의 동선이 겹치며, 날씨에 따라 변수가 많아지는 도로 위' },
+            { name: '학교 교실', emoji: '🏫', desc: '여러 명의 학생과 책걸상이 모여 있어 소음과 장애물이 혼재된 실내 공간' },
+            { name: '병원 응급실', emoji: '🏥', desc: '촌각을 다투는 상황이 빈번하며, 의료진과 장비가 쉴 새 없이 움직이는 곳' },
+            { name: '우주 정거장', emoji: '🚀', desc: '중력이 거의 없고, 아주 작은 충격이나 오류도 치명적인 결과를 낳는 극한 환경' },
+            { name: '도서관', emoji: '📖', desc: '아주 작은 소음도 방해가 되며 수많은 자료가 빽빽하게 밀집된 정숙한 공간' },
+            { name: '지하철 역사', emoji: '🚇', desc: '특정 시간대에 엄청난 인파가 몰리며 다양한 출구와 환승 통로가 얽혀 있는 곳' },
+            { name: '깊은 바다속', emoji: '🌊', desc: '빛이 거의 닿지 않고 엄청난 수압이 작용하며 조류의 변화가 심한 수중 환경' },
+            { name: '대형 물류 창고', emoji: '📦', desc: '수만 개의 물품이 높은 선반에 쌓여 있고 지게차와 작업자가 교차하는 넓은 실내' },
+            { name: '스마트 팜 (농장)', emoji: '🍎', desc: '온습도가 통제되어 있지만, 흙과 식물 넝쿨 등 불규칙한 자연물이 가득한 온실' },
+            { name: '독거 어르신 가정', emoji: '👵', desc: '거주자의 움직임이 적고 외부와의 교류가 단절되기 쉬운 조용하고 폐쇄적인 거주지' },
+            { name: '공항 터미널', emoji: '✈️', desc: '처음 방문하는 사람들이 많고, 넓은 면적에 복잡한 탑승구와 시설이 분포한 곳' },
+            { name: '건설 현장', emoji: '🏗️', desc: '무거운 자재가 오가고 소음이 심하며 지형의 높낮이 변화가 매우 큰 야외 작업장' },
+            { name: '유치원 놀이터', emoji: '🎠', desc: '어린아이들의 예측 불가능한 움직임이 많고 다양한 놀이기구가 배치된 야외 공간' },
+            { name: '태양광 발전소', emoji: '☀️', desc: '광활한 평지나 산비탈에 수많은 패널이 일정하게 늘어서 있지만 관리 인력은 적은 곳' },
+            { name: '심산유곡 (산악지대)', emoji: '⛰️', desc: '경사가 가파르고 통신 신호가 약하며 기상 변화를 예측하기 힘든 자연 지형' },
+            { name: '레스토랑 주방', emoji: '🍳', desc: '물과 불을 동시에 사용하며, 바닥이 미끄럽고 동선이 매우 좁고 복잡한 실내' },
+            { name: '고대 유적지', emoji: '🏺', desc: '아주 작은 충격에도 훼손될 수 있는 약한 구조물과 좁은 통로로 이루어진 미지의 공간' },
         ];
 
         const App = () => {
-            const [step, setStep] = useState(1);
+            const [step, setStep] = useState(0); 
             
+            const [intelCard, setIntelCard] = useState(null);
             const [funcCard, setFuncCard] = useState(null);
             const [sitCard, setSitCard] = useState(null);
+            
+            const [isIntelFlipped, setIsIntelFlipped] = useState(false);
             const [isFuncFlipped, setIsFuncFlipped] = useState(false);
             const [isSitFlipped, setIsSitFlipped] = useState(false);
             
@@ -107,63 +108,44 @@
 
             const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+            const drawIntel = () => {
+                setIsIntelFlipped(false);
+                const picked = pickRandom(INTEL_CARDS);
+                setTimeout(() => { setIntelCard(picked); setIsIntelFlipped(true); }, 150);
+            };
+
             const drawFunc = () => {
-                if (step !== 1) return;
                 setIsFuncFlipped(false);
                 const picked = pickRandom(FUNC_CARDS);
-                setTimeout(() => {
-                    setFuncCard(picked);
-                    setIsFuncFlipped(true);
-                }, 150);
+                setTimeout(() => { setFuncCard(picked); setIsFuncFlipped(true); }, 150);
             };
 
             const drawSit = () => {
-                if (step !== 1) return;
                 setIsSitFlipped(false);
                 const picked = pickRandom(SIT_CARDS);
-                setTimeout(() => {
-                    setSitCard(picked);
-                    setIsSitFlipped(true);
-                }, 150);
+                setTimeout(() => { setSitCard(picked); setIsSitFlipped(true); }, 150);
             };
 
             const drawAll = () => {
-                if (step !== 1) return;
-                setIsFuncFlipped(false);
-                setIsSitFlipped(false);
-
-                const pickedFunc = pickRandom(FUNC_CARDS);
-                const pickedSit = pickRandom(SIT_CARDS);
-
-                setTimeout(() => {
-                    setFuncCard(pickedFunc);
-                    setIsFuncFlipped(true);
-                }, 100);
-
-                setTimeout(() => {
-                    setSitCard(pickedSit);
-                    setIsSitFlipped(true);
-                }, 300);
-            };
-
-            const resetChallenge = () => {
-                setStep(1);
-                setIsFuncFlipped(false);
-                setIsSitFlipped(false);
-                setTimeout(() => {
-                    setFuncCard(null);
-                    setSitCard(null);
-                }, 500);
+                setIsIntelFlipped(false); setIsFuncFlipped(false); setIsSitFlipped(false);
+                const pI = pickRandom(INTEL_CARDS); const pF = pickRandom(FUNC_CARDS); const pS = pickRandom(SIT_CARDS);
+                setTimeout(() => { setIntelCard(pI); setIsIntelFlipped(true); }, 100);
+                setTimeout(() => { setFuncCard(pF); setIsFuncFlipped(true); }, 300);
+                setTimeout(() => { setSitCard(pS); setIsSitFlipped(true); }, 500);
             };
 
             const nextStep = () => {
                 setStep(prev => prev + 1);
-                setTimeout(() => {
-                    contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 
-            const isStep1Complete = isFuncFlipped && isSitFlipped && funcCard && sitCard;
+            const resetChallenge = () => {
+                setStep(1);
+                setIntelCard(null); setFuncCard(null); setSitCard(null);
+                setIsIntelFlipped(false); setIsFuncFlipped(false); setIsSitFlipped(false);
+            };
+
+            const isStep1Complete = isIntelFlipped && isFuncFlipped && isSitFlipped;
 
             return (
                 <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
@@ -179,222 +161,243 @@
                     </header>
 
                     {/* MAIN CONTENTS */}
-                    <main className="flex-1 max-w-4xl w-full mx-auto p-6 md:p-10 flex flex-col items-center">
+                    <main className="flex-1 max-w-5xl w-full mx-auto p-6 md:p-10 flex flex-col items-center justify-center">
                         
-                        <div className="text-center mb-8">
-                            <h1 className="text-3xl font-black tracking-tight mb-2">로봇 리믹스 <span className="text-[#1A73E8]">챌린지</span></h1>
-                            <p className="text-sm text-[#666] max-w-lg mx-auto">
-                                지능과 기능, 그리고 상황을 융합하여 우리 팀만의 창의적인 문제 해결 로봇을 기획해보세요.
-                            </p>
-                        </div>
-
-                        {/* 진행 단계 표시 (Stepper) */}
-                        <div className="w-full max-w-2xl mb-10">
-                            <div className="flex items-center justify-between relative">
-                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200 -z-10 rounded-full"></div>
-                                <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-[#1A73E8] -z-10 rounded-full transition-all duration-500`} style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}></div>
-                                
-                                {[1, 2, 3].map((s) => (
-                                    <div key={s} className="flex flex-col items-center gap-2 bg-[#F8F9FA] px-2">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-colors duration-300 ${step >= s ? 'bg-[#1A73E8] border-[#1A73E8] text-white shadow-md' : 'bg-white border-gray-300 text-gray-400'}`}>
-                                            {s}
+                        {/* ================= STEP 0: LANDING ================= */}
+                        {step === 0 && (
+                            <div className="max-w-3xl w-full text-center animate-fade-in">
+                                <div className="mb-12">
+                                    <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 leading-tight">
+                                        랜덤 카드 <br/> <span className="text-black bg-yellow-300 px-3">로봇 리믹스 챌린지</span>
+                                    </h1>
+                                    <div className="flex flex-col gap-2 mt-6 mb-8">
+                                        <div className="flex items-center justify-center gap-2 text-sm font-bold bg-white border border-gray-200 w-fit mx-auto px-4 py-1.5 rounded-full shadow-sm">
+                                            <i className="fa-solid fa-list-check text-black"></i>
+                                            <span>로봇 리믹스 챌린지 미션 활동 3단계 프로세스</span>
                                         </div>
-                                        <span className={`text-xs font-bold ${step >= s ? 'text-black' : 'text-gray-400'}`}>
-                                            {s === 1 ? '카드 뽑기' : s === 2 ? '프로젝트 설계' : '스튜디오 구현'}
-                                        </span>
                                     </div>
-                                ))}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 text-left">
+                                    <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                                        <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold mb-5 shadow-lg">1</div>
+                                        <h3 className="font-black text-lg mb-2">카드 뽑기</h3>
+                                        <p className="text-xs text-gray-500 leading-relaxed">지능(입력), 기능(출력), 상황(아이디어) 3가지 요소를 랜덤으로 조합합니다.</p>
+                                    </div>
+                                    <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                                        <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold mb-5 shadow-lg">2</div>
+                                        <h3 className="font-black text-lg mb-2">프로젝트 설계</h3>
+                                        <p className="text-xs text-gray-500 leading-relaxed">조합된 카드를 바탕으로 우리 팀만의 핵심 설계 규칙을 문장으로 정의합니다.</p>
+                                    </div>
+                                    <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                                        <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold mb-5 shadow-lg">3</div>
+                                        <h3 className="font-black text-lg mb-2">로봇 완성</h3>
+                                        <p className="text-xs text-gray-500 leading-relaxed">설계를 구체화하고 바이브코딩 스튜디오를 활용해 프로젝트를 실현합니다.</p>
+                                    </div>
+                                </div>
+
+                                <button onClick={nextStep} className="px-16 py-4 bx-pill-btn bx-btn-black text-lg shadow-2xl flex items-center gap-3 mx-auto">
+                                    프로젝트 시작하기 <i className="fa-solid fa-chevron-right text-sm"></i>
+                                </button>
                             </div>
-                        </div>
+                        )}
 
-                        {/* 스텝별 콘텐츠 영역 */}
-                        <div ref={contentRef} className="w-full max-w-3xl min-h-[400px] flex flex-col items-center animate-fade-in">
-                            
-                            {/* ================= STEP 1 ================= */}
-                            {step === 1 && (
-                                <div className="w-full flex flex-col items-center animate-fade-in">
-                                    <div className="w-full bg-white border border-[#E5E7EB] rounded-2xl p-6 mb-8 shadow-sm">
-                                        <div className="flex items-center gap-2 font-bold text-sm mb-3">
-                                            <i className="fa-solid fa-layer-group text-[#1A73E8]"></i>
-                                            <span>로봇 리믹스 챌린지 미션 활동 단계 - 1단계</span>
-                                        </div>
-                                        <p className="text-sm text-[#555] leading-relaxed mb-4">
-                                            하단의 덱을 활용해 프로젝트의 기반이 될 <b>지능/기능카드</b>와 적용할 <b>상황 카드</b>를 랜덤 매칭합니다.
-                                        </p>
+                        {/* ================= STEP 1, 2, 3: CHALLENGE CONTENT ================= */}
+                        {step > 0 && (
+                            <div className="w-full flex flex-col items-center">
+                                {/* Stepper 상단 */}
+                                <div className="w-full max-w-2xl mb-12">
+                                    <div className="flex items-center justify-between relative">
+                                        <div className="absolute left-0 top-5 w-full h-0.5 bg-gray-200 -z-10"></div>
+                                        <div className="absolute left-0 top-5 h-0.5 bg-black -z-10 transition-all duration-500" style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}></div>
                                         
-                                        {/* 시각적 관계 표현 */}
-                                        <div className="bg-[#F4F6F9] rounded-xl p-4 flex flex-wrap items-center justify-center gap-2 md:gap-4 text-xs font-bold border border-[#E5E7EB]">
-                                            <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm">
-                                                <i className="fa-solid fa-brain"></i> 지능 = 입력
+                                        {[1, 2, 3].map((s) => (
+                                            <div key={s} className="flex flex-col items-center gap-2">
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all ${step >= s ? 'bg-black border-black text-white shadow-lg' : 'bg-white border-gray-200 text-gray-400'}`}>
+                                                    {s}
+                                                </div>
+                                                <span className={`text-[11px] font-bold ${step >= s ? 'text-black' : 'text-gray-400'}`}>
+                                                    {s === 1 ? '카드 뽑기' : s === 2 ? '프로젝트 설계' : '프로젝트 완성'}
+                                                </span>
                                             </div>
-                                            <i className="fa-solid fa-plus text-gray-400 text-[10px]"></i>
-                                            <div className="flex items-center gap-1.5 bg-red-50 text-red-700 px-3 py-1.5 rounded-lg border border-red-200 shadow-sm">
-                                                <i className="fa-solid fa-microchip"></i> 기능 = 출력
-                                            </div>
-                                            <i className="fa-solid fa-xmark text-gray-400 text-[10px]"></i>
-                                            <div className="flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg border border-green-200 shadow-sm">
-                                                <i className="fa-solid fa-lightbulb"></i> 상황 = 아이디어
-                                            </div>
-                                        </div>
+                                        ))}
                                     </div>
+                                </div>
 
-                                    <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10 w-full mb-8">
-                                        {/* 지능/기능 카드 */}
-                                        <div className="flex flex-col items-center gap-3">
-                                            <span className="text-[11px] font-bold text-[#666] bg-white border border-[#E5E7EB] px-3 py-1 rounded-full shadow-sm">⚡ 지능/기능 카드</span>
-                                            <div className="card-perspective w-[180px] h-[240px] cursor-pointer" onClick={drawFunc}>
-                                                <div className={`card-inner w-full h-full relative rounded-2xl shadow-md border border-[#E5E7EB] ${isFuncFlipped ? 'card-flipped' : ''}`}>
-                                                    <div className="backface-hidden absolute inset-0 bg-black rounded-2xl flex flex-col items-center justify-center p-4 text-center text-white border border-[#333]">
-                                                        <div className="w-10 h-10 rounded-xl bg-[#222] border border-[#444] flex items-center justify-center text-lg mb-2 text-[#EA4335]"><i className="fa-solid fa-microchip"></i></div>
-                                                        <div className="text-[10px] font-bold tracking-wider opacity-60 font-mono">INTELLIGENCE<br/>& FUNCTION</div>
-                                                    </div>
-                                                    <div className="backface-hidden absolute inset-0 bg-white rounded-2xl flex flex-col items-center justify-between p-4 text-center rotate-y-180">
-                                                        <div className="text-4xl my-auto">{funcCard?.emoji || '✨'}</div>
-                                                        <div>
-                                                            <div className="text-xs font-black text-black mb-1">{funcCard?.name || '—'}</div>
-                                                            <div className="text-[10px] text-[#666] leading-tight">{funcCard?.desc || ''}</div>
+                                {/* Step 1 콘텐츠 */}
+                                {step === 1 && (
+                                    <div className="w-full animate-fade-in flex flex-col items-center">
+                                        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-10 shadow-sm w-full">
+                                            <h2 className="font-black text-lg mb-2 flex items-center gap-2">
+                                                <i className="fa-solid fa-layer-group"></i> 1단계. 카드 뽑기
+                                            </h2>
+                                            <p className="text-sm text-gray-500">
+                                                하단의 덱을 활용해 프로젝트의 기반이 될 <b>지능, 기능 카드</b>와 적용할 <b>상황 카드</b>를 랜덤 매칭합니다.
+                                            </p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                                            {/* 지능 카드 */}
+                                            <div className="flex flex-col items-center gap-4">
+                                                <span className="text-[11px] font-black bg-black text-white px-4 py-1.5 rounded-full shadow-md tracking-wider">🧠 지능 (입력)</span>
+                                                <div className="card-perspective w-[210px] h-[280px] cursor-pointer" onClick={drawIntel}>
+                                                    <div className={`card-inner w-full h-full relative rounded-2xl shadow-lg border border-gray-200 ${isIntelFlipped ? 'card-flipped' : ''}`}>
+                                                        <div className="backface-hidden absolute inset-0 bg-black rounded-2xl flex flex-col items-center justify-center p-4 text-center text-white">
+                                                            <i className="fa-solid fa-microchip text-4xl mb-4 opacity-40"></i>
+                                                            <div className="text-[10px] font-mono tracking-widest opacity-60">INTELLIGENCE</div>
+                                                        </div>
+                                                        <div className="backface-hidden absolute inset-0 bg-white rounded-2xl flex flex-col items-center justify-between p-6 text-center rotate-y-180">
+                                                            <div className="text-5xl my-auto">{intelCard?.emoji || '❕'}</div>
+                                                            <div>
+                                                                <div className="text-sm font-black mb-1">{intelCard?.name || '—'}</div>
+                                                                <div className="text-[11px] text-gray-500 leading-tight">{intelCard?.desc}</div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <button onClick={drawIntel} className="text-[11px] font-bold underline underline-offset-4 hover:text-gray-400">지능 다시 뽑기</button>
                                             </div>
-                                            <button onClick={drawFunc} className="px-4 py-1.5 bg-white border border-gray-300 rounded-full text-[11px] font-bold hover:border-black w-[130px] transition-colors shadow-sm">지능/기능 뽑기</button>
-                                        </div>
 
-                                        <div className="text-[#AAA] text-md font-bold bg-white border border-[#E5E7EB] w-8 h-8 rounded-full flex items-center justify-center shadow-sm">
-                                            <i className="fa-solid fa-plus text-xs"></i>
-                                        </div>
-
-                                        {/* 상황 카드 */}
-                                        <div className="flex flex-col items-center gap-3">
-                                            <span className="text-[11px] font-bold text-[#666] bg-white border border-[#E5E7EB] px-3 py-1 rounded-full shadow-sm">🌍 상황 카드</span>
-                                            <div className="card-perspective w-[180px] h-[240px] cursor-pointer" onClick={drawSit}>
-                                                <div className={`card-inner w-full h-full relative rounded-2xl shadow-md border border-[#E5E7EB] ${isSitFlipped ? 'card-flipped' : ''}`}>
-                                                    <div className="backface-hidden absolute inset-0 bg-black rounded-2xl flex flex-col items-center justify-center p-4 text-center text-white border border-[#333]">
-                                                        <div className="w-10 h-10 rounded-xl bg-[#222] border border-[#444] flex items-center justify-center text-lg mb-2 text-[#4285F4]"><i className="fa-solid fa-earth-americas"></i></div>
-                                                        <div className="text-[10px] font-bold tracking-wider opacity-60 font-mono">SITUATION</div>
-                                                    </div>
-                                                    <div className="backface-hidden absolute inset-0 bg-white rounded-2xl flex flex-col items-center justify-between p-4 text-center rotate-y-180">
-                                                        <div className="text-4xl my-auto">{sitCard?.emoji || '🏠'}</div>
-                                                        <div>
-                                                            <div className="text-xs font-black text-black mb-1">{sitCard?.name || '—'}</div>
-                                                            <div className="text-[10px] text-[#666] leading-tight">{sitCard?.desc || ''}</div>
+                                            {/* 기능 카드 */}
+                                            <div className="flex flex-col items-center gap-4">
+                                                <span className="text-[11px] font-black bg-black text-white px-4 py-1.5 rounded-full shadow-md tracking-wider">⚙️ 기능 (출력)</span>
+                                                <div className="card-perspective w-[210px] h-[280px] cursor-pointer" onClick={drawFunc}>
+                                                    <div className={`card-inner w-full h-full relative rounded-2xl shadow-lg border border-gray-200 ${isFuncFlipped ? 'card-flipped' : ''}`}>
+                                                        <div className="backface-hidden absolute inset-0 bg-black rounded-2xl flex flex-col items-center justify-center p-4 text-center text-white">
+                                                            <i className="fa-solid fa-robot text-4xl mb-4 opacity-40"></i>
+                                                            <div className="text-[10px] font-mono tracking-widest opacity-60">FUNCTION</div>
+                                                        </div>
+                                                        <div className="backface-hidden absolute inset-0 bg-white rounded-2xl flex flex-col items-center justify-between p-6 text-center rotate-y-180">
+                                                            <div className="text-5xl my-auto">{funcCard?.emoji || '❕'}</div>
+                                                            <div>
+                                                                <div className="text-sm font-black mb-1">{funcCard?.name || '—'}</div>
+                                                                <div className="text-[11px] text-gray-500 leading-tight">{funcCard?.desc}</div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <button onClick={drawFunc} className="text-[11px] font-bold underline underline-offset-4 hover:text-gray-400">기능 다시 뽑기</button>
                                             </div>
-                                            <button onClick={drawSit} className="px-4 py-1.5 bg-white border border-gray-300 rounded-full text-[11px] font-bold hover:border-black w-[130px] transition-colors shadow-sm">상황 뽑기</button>
-                                        </div>
-                                    </div>
 
-                                    {!isStep1Complete ? (
-                                        <button onClick={drawAll} className="px-6 py-2.5 bx-pill-btn bx-btn-black text-xs flex items-center gap-2 tracking-wide shadow-md">
-                                            <i className="fa-solid fa-dice text-sm"></i>
-                                            <span>매칭 카드 한 번에 뽑기</span>
-                                        </button>
-                                    ) : (
-                                        <button onClick={nextStep} className="px-8 py-3 bx-pill-btn bx-btn-primary text-sm flex items-center gap-2 tracking-wide shadow-lg animate-fade-in">
-                                            <span>2단계: 프로젝트 설계하기</span>
-                                            <i className="fa-solid fa-arrow-right"></i>
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* ================= STEP 2 ================= */}
-                            {step === 2 && (
-                                <div className="w-full flex flex-col items-center animate-fade-in">
-                                    <div className="w-full bg-white border border-[#E5E7EB] rounded-2xl p-6 mb-8 shadow-sm">
-                                        <div className="flex items-center gap-2 font-bold text-sm mb-3">
-                                            <i className="fa-solid fa-pen-ruler text-[#EA4335]"></i>
-                                            <span>로봇 리믹스 챌린지 미션 활동 단계 - 2단계</span>
-                                        </div>
-                                        <p className="text-sm text-[#555] leading-relaxed mb-2">
-                                            뽑은 카드들을 기반으로 우리 팀만의 <b>핵심 설계 규칙</b>을 문장으로 완성합니다. 
-                                        </p>
-                                        <p className="text-sm text-[#555] leading-relaxed">
-                                            해당 상황에서 어떤 불편함과 문제를 발견하고 해결할지 프로젝트의 구체적인 아이디어를 설계하세요. 
-                                            <span className="text-[#1A73E8] font-semibold"> (뽑은 기능 카드에 추가로 다른 기능을 더 추가해도 좋습니다)</span>
-                                        </p>
-                                    </div>
-
-                                    <div className="w-full bg-white border-2 border-black rounded-2xl shadow-xl overflow-hidden mb-8">
-                                        <div className="p-4 bg-black text-white flex justify-between items-center">
-                                            <div className="text-sm font-bold flex items-center gap-2">
-                                                <i className="fa-solid fa-clipboard-check"></i> 팀 프로젝트 핵심 설계 규칙
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <span className="bg-[#222] border border-[#444] px-2 py-1 rounded text-[10px]">{funcCard.name}</span>
-                                                <span className="bg-[#222] border border-[#444] px-2 py-1 rounded text-[10px]">{sitCard.name}</span>
+                                            {/* 상황 카드 */}
+                                            <div className="flex flex-col items-center gap-4">
+                                                <span className="text-[11px] font-black bg-black text-white px-4 py-1.5 rounded-full shadow-md tracking-wider">🌍 상황 (아이디어)</span>
+                                                <div className="card-perspective w-[210px] h-[280px] cursor-pointer" onClick={drawSit}>
+                                                    <div className={`card-inner w-full h-full relative rounded-2xl shadow-lg border border-gray-200 ${isSitFlipped ? 'card-flipped' : ''}`}>
+                                                        <div className="backface-hidden absolute inset-0 bg-black rounded-2xl flex flex-col items-center justify-center p-4 text-center text-white">
+                                                            <i className="fa-solid fa-earth-americas text-4xl mb-4 opacity-40"></i>
+                                                            <div className="text-[10px] font-mono tracking-widest opacity-60">SITUATION</div>
+                                                        </div>
+                                                        <div className="backface-hidden absolute inset-0 bg-white rounded-2xl flex flex-col items-center justify-between p-6 text-center rotate-y-180">
+                                                            <div className="text-5xl my-auto">{sitCard?.emoji || '❕'}</div>
+                                                            <div>
+                                                                <div className="text-sm font-black mb-1">{sitCard?.name || '—'}</div>
+                                                                <div className="text-[11px] text-gray-500 leading-tight">{sitCard?.desc}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button onClick={drawSit} className="text-[11px] font-bold underline underline-offset-4 hover:text-gray-400">상황 다시 뽑기</button>
                                             </div>
                                         </div>
-                                        <div className="p-6 md:p-8 bg-gradient-to-b from-[#F8F9FA] to-white">
-                                            <div className="bg-white border-2 border-dashed border-[#D1D5DB] p-6 rounded-xl text-sm md:text-base text-gray-800 leading-loose shadow-inner text-center">
-                                                우리 팀은 <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold mx-1 border border-blue-200">{funcCard.name}</span> 기능(지능)을 활용해 <br className="block md:hidden"/> <span className="bg-green-100 text-green-700 px-2 py-1 rounded font-bold mx-1 border border-green-200">{sitCard.name}</span> 상황에서 발생하는 <br className="block md:hidden"/>
-                                                <span className="border-b-2 border-black px-8 py-1 font-mono text-[#AAA] inline-block font-bold mt-2 md:mt-0 transition-all hover:bg-gray-50 cursor-text">
-                                                    (해결할 문제 및 아이디어 작성)
-                                                </span> 문제를 해결한다.
+
+                                        {!isStep1Complete ? (
+                                            <button onClick={drawAll} className="px-10 py-3.5 bx-pill-btn bx-btn-black text-sm flex items-center gap-2 shadow-xl">
+                                                <i className="fa-solid fa-dice text-lg"></i> 모든 카드 일괄 뽑기
+                                            </button>
+                                        ) : (
+                                            <button onClick={nextStep} className="px-12 py-3.5 bx-pill-btn bx-btn-black text-sm flex items-center gap-2 shadow-xl animate-fade-in">
+                                                2단계: 프로젝트 설계 이동 <i className="fa-solid fa-arrow-right"></i>
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Step 2 콘텐츠 */}
+                                {step === 2 && (intelCard && funcCard && sitCard) && (
+                                    <div className="w-full animate-fade-in flex flex-col items-center">
+                                        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-10 shadow-sm w-full">
+                                            <h2 className="font-black text-lg mb-2 flex items-center gap-2">
+                                                <i className="fa-solid fa-pen-ruler"></i> 2단계. 팀 프로젝트 설계
+                                            </h2>
+                                            <p className="text-sm text-gray-500 leading-relaxed">
+                                                조합된 카드를 바탕으로 우리 팀만의 <b>핵심 설계 규칙</b>을 문장으로 완성합니다. <br/>
+                                                해당 상황에서 발견할 수 있는 불편함이나 문제를 해결할 창의적인 아이디어를 설계하세요.
+                                                <span className="font-black text-black ml-1">(추가 기능을 더해도 좋습니다!)</span>
+                                            </p>
+                                        </div>
+
+                                        <div className="w-full bg-white border-[4px] border-black rounded-[40px] p-10 md:p-16 shadow-2xl mb-12 relative overflow-hidden">
+                                            <div className="absolute top-0 left-0 w-full h-2 bg-yellow-300"></div>
+                                            <div className="text-center mb-10">
+                                                <span className="text-[10px] font-black tracking-[0.3em] bg-black text-white px-6 py-1.5 rounded-full uppercase">Robot Design Rule</span>
+                                            </div>
+                                            <div className="text-xl md:text-3xl font-black leading-[2.2] text-center">
+                                                우리 팀은 <span className="bg-yellow-100 border-b-4 border-yellow-400 px-3 py-1 mx-1">{intelCard.name}</span>을 지능(입력)으로 활용하고,<br/>
+                                                <span className="bg-yellow-100 border-b-4 border-yellow-400 px-3 py-1 mx-1">{funcCard.name}</span>을 기능(출력)으로 활용하여,<br/>
+                                                <span className="bg-yellow-100 border-b-4 border-yellow-400 px-3 py-1 mx-1">{sitCard.name}</span> 상황에서 발생하는<br/>
+                                                <span className="border-b-4 border-black px-12 py-1 text-gray-300 font-mono italic inline-block mt-3">문제를 발견하고 해결하는 아이디어 작성</span> 프로젝트를 완성한다.
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="flex gap-4">
-                                        <button onClick={resetChallenge} className="px-6 py-2.5 bg-white border border-gray-300 rounded-full text-xs font-bold hover:bg-gray-50 transition-colors">
-                                            카드 다시 뽑기
-                                        </button>
-                                        <button onClick={nextStep} className="px-8 py-2.5 bx-pill-btn bx-btn-primary text-sm flex items-center gap-2 shadow-lg">
-                                            <span>설계 완료! 3단계로 이동</span>
-                                            <i className="fa-solid fa-arrow-right"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ================= STEP 3 ================= */}
-                            {step === 3 && (
-                                <div className="w-full flex flex-col items-center animate-fade-in">
-                                    <div className="w-full bg-white border border-[#E5E7EB] rounded-2xl p-6 mb-8 shadow-sm">
-                                        <div className="flex items-center gap-2 font-bold text-sm mb-3">
-                                            <i className="fa-solid fa-laptop-code text-[#34A853]"></i>
-                                            <span>로봇 리믹스 챌린지 미션 활동 단계 - 3단계</span>
+                                        <div className="flex gap-4">
+                                            <button onClick={resetChallenge} className="px-8 py-3.5 bg-white border-2 border-black rounded-full text-sm font-black hover:bg-gray-50 transition-colors">
+                                                카드 다시 뽑기
+                                            </button>
+                                            <button onClick={nextStep} className="px-12 py-3.5 bx-pill-btn bx-btn-black text-sm shadow-xl">
+                                                설계 완료! 3단계 이동 <i className="fa-solid fa-check ml-2"></i>
+                                            </button>
                                         </div>
-                                        <p className="text-sm text-[#555] leading-relaxed mb-2">
-                                            팀원들과 완성한 핵심 설계 규칙을 바탕으로 프로젝트를 <b>완성</b>해봅시다.
-                                        </p>
-                                        <p className="text-sm text-[#555] leading-relaxed">
-                                            (바이브코딩의 도움을 받아도 좋습니다)
-                                        </p>
                                     </div>
+                                )}
 
-                                    <div className="w-full max-w-md bg-gradient-to-br from-gray-900 to-black rounded-2xl p-8 flex flex-col items-center text-center shadow-2xl mb-8 border border-gray-800">
-                                        <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-3xl mb-4 border border-white/20 text-white">
-                                            🚀
+                                {/* Step 3 콘텐츠 */}
+                                {step === 3 && (
+                                    <div className="w-full animate-fade-in flex flex-col items-center">
+                                        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-10 shadow-sm w-full">
+                                            <h2 className="font-black text-lg mb-2 flex items-center gap-2">
+                                                <i className="fa-solid fa-rocket"></i> 3단계. 로봇 프로젝트 완성
+                                            </h2>
+                                            <p className="text-sm text-gray-500 leading-relaxed">
+                                                팀원들과 정의한 핵심 설계 규칙을 바탕으로 프로젝트를 구체화하고 구현해봅시다. <br/>
+                                                복잡한 기능 구현은 <b>바이브코딩 스튜디오</b>를 활용해 완성할 수 있습니다.
+                                            </p>
                                         </div>
-                                        <h3 className="text-xl font-bold text-white mb-2">준비가 완료되었습니다!</h3>
-                                        <p className="text-gray-400 text-sm mb-8">
-                                            스튜디오로 이동하여 코드를 작성하고<br/>피지컬 AI 로봇을 동작시켜보세요.
-                                        </p>
-                                        <a href="#" className="w-full py-3.5 bg-[#1A73E8] hover:bg-[#1557B0] text-white rounded-xl font-bold text-sm transition-all shadow-[0_0_20px_rgba(26,115,232,0.4)] flex justify-center items-center gap-2">
-                                            <i className="fa-solid fa-code"></i> 바이브코딩 스튜디오 열기
-                                        </a>
+
+                                        <div className="bg-black text-white w-full rounded-[40px] p-12 mb-12 text-center shadow-2xl">
+                                            <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center text-4xl mb-6 mx-auto border border-white/20">
+                                                🛰️
+                                            </div>
+                                            <h3 className="text-2xl font-black mb-4 tracking-tight">도전을 시작할 준비가 되었나요?</h3>
+                                            <p className="text-gray-400 text-sm mb-10 leading-relaxed">
+                                                설계한 규칙에 맞춰 지능형 모델을 학습시키고<br/>
+                                                로봇의 동작을 코딩하여 미션을 해결해보세요.
+                                            </p>
+                                            <a href="https://boundary-x.github.io/vibe_coding_studio/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-16 py-4 bg-yellow-300 hover:bg-yellow-400 text-black rounded-full font-black text-lg transition-all shadow-[0_10px_30px_rgba(253,224,71,0.3)]">
+                                                <i className="fa-solid fa-laptop-code"></i>
+                                                바이브코딩 스튜디오 열기
+                                            </a>
+                                        </div>
+
+                                        <button onClick={() => setStep(0)} className="text-xs font-black text-gray-400 hover:text-black transition-colors underline underline-offset-8">
+                                            챌린지 프로세스 다시 확인하기
+                                        </button>
                                     </div>
+                                )}
+                            </div>
+                        )}
 
-                                    <button onClick={resetChallenge} className="text-xs text-gray-500 hover:text-black underline underline-offset-4 font-medium transition-colors">
-                                        새로운 챌린지 다시 시작하기
-                                    </button>
-                                </div>
-                            )}
-
-                        </div>
                     </main>
 
                     {/* FOOTER */}
-                    <footer className="bg-black text-white px-8 py-5 border-t border-[#222] shrink-0 text-xs flex justify-between items-center z-50">
-                        <div className="flex flex-col gap-1.5">
-                            <strong className="text-sm font-bold tracking-tight">바운더리엑스 (Boundary X)</strong>
-                            <span className="text-[#999] font-normal">"미래 기술을 교실의 책상 위로"</span>
+                    <footer className="bg-black text-white px-8 py-6 border-t border-[#222] shrink-0 text-xs flex flex-col md:flex-row justify-between items-center gap-4 z-50">
+                        <div className="flex flex-col gap-1.5 text-center md:text-left">
+                            <strong className="text-sm font-black tracking-tight">바운더리엑스 (Boundary X)</strong>
+                            <span className="text-[#666] font-medium italic">"미래 기술을 교실의 책상 위로"</span>
                         </div>
-                        <div className="text-[#666] font-medium">
-                            © 2026 Boundary X Co. All rights reserved.
+                        <div className="text-[#444] font-medium text-center md:text-right">
+                            © 2026 Boundary X Co. All rights reserved. <br className="md:hidden"/>
+                            Designed for AI & Robot Education.
                         </div>
                     </footer>
                 </div>
