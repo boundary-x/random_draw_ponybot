@@ -10,8 +10,6 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -115,10 +113,6 @@
             const [decompObject, setDecompObject] = useState('');
             const [decompEnv, setDecompEnv] = useState('');
             const [painPoint, setPainPoint] = useState('');
-            
-            // PDF 추출을 위한 상태 및 Ref
-            const step2Ref = useRef(null);
-            const [isExporting, setIsExporting] = useState(false);
 
             const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
@@ -154,29 +148,6 @@
                 setIntelCard(null); setFuncCard(null); setSitCard(null);
                 setIsIntelFlipped(false); setIsFuncFlipped(false); setIsSitFlipped(false);
                 setDecompPeople(''); setDecompObject(''); setDecompEnv(''); setPainPoint('');
-            };
-
-            // PDF 다운로드 핸들러
-            const handleDownloadPDF = () => {
-                if(!step2Ref.current) return;
-                setIsExporting(true);
-                
-                const opt = {
-                    margin:       15,
-                    filename:     `로봇리믹스_기획서_${new Date().getTime()}.pdf`,
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2, logging: false, useCORS: true },
-                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-                
-                // html2pdf 라이브러리 실행
-                window.html2pdf().set(opt).from(step2Ref.current).save().then(() => {
-                    setIsExporting(false);
-                }).catch(err => {
-                    console.error("PDF 생성 중 오류 발생:", err);
-                    setIsExporting(false);
-                    alert("PDF 생성 중 문제가 발생했습니다.");
-                });
             };
 
             const isStep1Complete = isIntelFlipped && isFuncFlipped && isSitFlipped;
@@ -384,8 +355,7 @@
                                             </p>
                                         </div>
 
-                                        {/* PDF로 추출될 기획서 영역 (ref 할당 및 패딩/배경색 적용) */}
-                                        <div ref={step2Ref} className="w-full flex flex-col gap-8 mb-8 bg-[#F8F9FA] p-2 rounded-3xl">
+                                        <div className="w-full flex flex-col gap-8 mb-8 bg-[#F8F9FA] p-2 rounded-3xl">
                                             
                                             {/* 2-1 분해 */}
                                             <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm">
@@ -422,7 +392,7 @@
                                                 </div>
                                             </div>
 
-                                            {/* 💡 확장 팁 (Tip Box) - 2단계와 3단계 사이에 배치 */}
+                                            {/* 💡 확장 팁 (Tip Box) */}
                                             <div className="w-full bg-[#F6F8FC] border border-[#E8EAED] rounded-2xl p-5 flex gap-4 items-start shadow-sm mx-auto" style={{ width: 'calc(100% - 10px)' }}>
                                                 <div className="bg-white text-2xl p-2 rounded-xl shadow-sm border border-gray-100 flex-shrink-0">
                                                     💡
@@ -458,16 +428,6 @@
                                                 다시 처음부터
                                             </button>
                                             
-                                            {/* PDF 다운로드 버튼 추가 */}
-                                            <button 
-                                                onClick={handleDownloadPDF} 
-                                                disabled={isExporting} 
-                                                className={`px-8 py-3.5 bg-white border-2 border-black rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-colors ${isExporting ? 'opacity-50 cursor-wait' : 'hover:bg-gray-50'}`}
-                                            >
-                                                <i className="fa-solid fa-file-pdf text-[#EA4335]"></i> 
-                                                {isExporting ? 'PDF 저장 중...' : '기획서 PDF 저장'}
-                                            </button>
-
                                             <button onClick={nextStep} disabled={!isStep2Complete} className={`px-12 py-3.5 bx-pill-btn text-sm shadow-xl flex items-center justify-center gap-2 transition-all ${isStep2Complete ? 'bx-btn-black' : 'bg-gray-200 text-gray-400 cursor-not-allowed border-none shadow-none'}`}>
                                                 설계 완료! 3단계 이동 <i className="fa-solid fa-check"></i>
                                             </button>
