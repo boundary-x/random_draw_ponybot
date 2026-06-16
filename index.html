@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>랜덤 카드 바이브코딩 프로젝트 | Boundary X</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/boundary-x/ai_teachable_machine/refs/heads/main/Favicon.png"/>
+    
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+        
+        :root {
+            --font-main: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+        body, #root, button, input, textarea, select { 
+            font-family: var(--font-main) !important; 
+        }
+        
+        /* 3D Card Flip CSS */
+        .card-perspective { perspective: 1000px; }
+        .card-inner {
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-flipped { transform: rotateY(180deg); }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        .bx-pill-btn {
+            transition: all 0.2s;
+            border-radius: 50px; 
+            font-weight: 600;
+        }
+        .bx-btn-black {
+            background-color: #000;
+            color: #fff;
+        }
+        .bx-btn-black:hover {
+            background-color: #222;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-[#F8F9FA] text-[#111] overflow-x-hidden min-h-screen flex flex-col">
+    <div id="root" class="flex flex-col min-h-screen justify-between"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const FUNC_CARDS = [
+            { name: '네오픽셀 LED', emoji: '🌈', desc: '화려한 빛과 색상을 자유롭게 표현하는 출력 소자' },
+            { name: 'OLED 디스플레이', emoji: '📺', desc: '글자나 숫자, 데이터를 화면에 명확하게 보여주는 출력 소자' },
+            { name: '스피커 (멜로디)', emoji: '🔊', desc: '효과음, 경고음이나 신나는 음악 멜로디를 재생하는 출력 소자' },
+            { name: '터치 센서', emoji: '👆', desc: '사람의 손가락이나 전도성 물체의 접촉을 감지하는 입력 소자' },
+            { name: '소리 입력 (마이크)', emoji: '🎵', desc: '주변 소음의 크기나 소리 발생 여부를 감지하는 마이크 입력 소자' },
+            { name: '음성 인식', emoji: '🗣️', desc: '특정 말소리나 음성 명령어를 구별해 반응하는 지능형 기능' },
+            { name: '모델 학습 (AI)', emoji: '🧠', desc: '티처블머신 등으로 사물, 포즈, 데이터를 학습시켜 인식하는 기능' },
+            { name: '가속도(모션) 센서', emoji: '📡', desc: '마이크로비트의 흔들림, 기울임, 움직임을 감지하는 입력 소자' },
+            { name: '빛 센서', emoji: '🔆', desc: '주변 환경의 밝고 어두운 정도를 측정하는 입력 소자' },
+            { name: '버튼 입력 (A / B)', emoji: '🔘', desc: '사용자가 딸깍 눌러서 신호를 주는 가장 직관적인 입력 소자' },
+            { name: '온도 센서', emoji: '🌡️', desc: '주변의 현재 열기나 온도를 측정하는 입력 소자' },
+            { name: '라디오 통신', emoji: '📻', desc: '다른 마이크로비트 장치들과 무선 신호를 송수신하는 통신 기능' },
+        ];
+
+        const SIT_CARDS = [
+            { name: '학교 교실', emoji: '🏫', desc: '친구들과 함께 공부하고 쉬는 우리들의 주 생활 공간' },
+            { name: '학교 급식실', emoji: '🍚', desc: '맛있게 밥을 먹지만 차례를 지키고 복잡할 수 있는 공간' },
+            { name: '학교 화장실', emoji: '🧼', desc: '위생이 중요하고 혼자 이용할 때 안전이나 배려가 필요한 공간' },
+            { name: '학교 운동장', emoji: '⚽', desc: '체육 활동을 하거나 신나게 뛰어노는 넓은 야외 공간' },
+            { name: '도서관', emoji: '📖', desc: '조용히 책을 읽거나 자료를 찾는 정숙한 공간' },
+            { name: '지하철', emoji: '🚇', desc: '사람이 많고 복잡하며 안내가 중요한 대중교통 공간' },
+            { name: '침실', emoji: '🛌', desc: '하루를 마무리하고 편안하게 잠자리에 드는 조용한 공간' },
+            { name: '카페', emoji: '☕', desc: '음악이 흐르고 편안하게 대화를 나누거나 휴식하는 공간' },
+            { name: '주방', emoji: '🍳', desc: '불과 칼을 사용해 요리하며 바쁘게 움직이는 위험한 공간' },
+            { name: '야외 캠핑', emoji: '⛺', desc: '자연 속에서 텐트를 치고 밤을 보내는 감성적인 공간' },
+        ];
+
+        const App = () => {
+            const [funcCard, setFuncCard] = useState(null);
+            const [sitCard, setSitCard] = useState(null);
+            const [isFuncFlipped, setIsFuncFlipped] = useState(false);
+            const [isSitFlipped, setIsSitFlipped] = useState(false);
+            const [showResult, setShowResult] = useState(false);
+
+            const resultRef = useRef(null);
+
+            const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+            const drawFunc = () => {
+                setIsFuncFlipped(false);
+                const picked = pickRandom(FUNC_CARDS);
+                setTimeout(() => {
+                    setFuncCard(picked);
+                    setIsFuncFlipped(true);
+                }, 150);
+            };
+
+            const drawSit = () => {
+                setIsSitFlipped(false);
+                const picked = pickRandom(SIT_CARDS);
+                setTimeout(() => {
+                    setSitCard(picked);
+                    setIsSitFlipped(true);
+                }, 150);
+            };
+
+            const drawAll = () => {
+                setIsFuncFlipped(false);
+                setIsSitFlipped(false);
+                setShowResult(false);
+
+                const pickedFunc = pickRandom(FUNC_CARDS);
+                const pickedSit = pickRandom(SIT_CARDS);
+
+                setTimeout(() => {
+                    setFuncCard(pickedFunc);
+                    setIsFuncFlipped(true);
+                }, 100);
+
+                setTimeout(() => {
+                    setSitCard(pickedSit);
+                    setIsSitFlipped(true);
+                }, 300);
+            };
+
+            useEffect(() => {
+                if (isFuncFlipped && isSitFlipped && funcCard && sitCard) {
+                    const timer = setTimeout(() => {
+                        setShowResult(true);
+                        setTimeout(() => {
+                            resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, 100);
+                    }, 400);
+                    return () => clearTimeout(timer);
+                }
+            }, [isFuncFlipped, isSitFlipped, funcCard, sitCard]);
+
+            return (
+                <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
+                    {/* HEADER - 차시 배지 라벨 영구 제거 */}
+                    <header className="flex justify-between items-center bg-black border-b border-[#333] px-6 py-3.5 shrink-0 z-50 shadow-md">
+                        <div className="flex items-center gap-3">
+                            <a href="https://boundaryx.io" target="_blank" rel="noreferrer" className="flex items-center transition-opacity hover:opacity-80">
+                                <img src="https://raw.githubusercontent.com/boundary-x/ai_voice_recognition/refs/heads/main/boundaryx_logo.png" alt="Boundary X Logo" className="h-6 w-auto" />
+                            </a>
+                            <div className="h-4 w-px bg-[#444] mx-1"></div>
+                            <span className="text-white text-md font-bold tracking-tight">랜덤 카드 바이브코딩 프로젝트</span>
+                        </div>
+                    </header>
+
+                    {/* MAIN CONTENTS */}
+                    <main className="flex-1 max-w-4xl w-full mx-auto p-6 md:p-10 flex flex-col items-center justify-center">
+                        
+                        {/* 바이브코딩 미션 활동 단계 바 - 2단계 가이드라인 고도화 */}
+                        <div className="w-full max-w-3xl bg-white border border-[#E5E7EB] rounded-2xl p-5 mb-8 shadow-sm">
+                            <div className="flex items-center gap-2 font-bold text-sm mb-3">
+                                <i className="fa-solid fa-route text-[#EA4335]"></i>
+                                <span>바이브코딩 미션 활동 단계</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-[#555] leading-relaxed">
+                                <div className="bg-[#F8F9FA] p-3 rounded-xl border border-[#EEF0F2]">
+                                    <strong className="text-black block mb-1">1단계. 카드 뽑기</strong>
+                                    하단의 덱을 활용하여 프로젝트의 기반이 될 피지컬 하드웨어 <span className="font-semibold text-black">소자/기능</span>과 적용할 <span className="font-semibold text-black">상황</span> 카드를 랜덤 매칭합니다.
+                                </div>
+                                <div className="bg-[#F8F9FA] p-3 rounded-xl border border-[#EEF0F2]">
+                                    <strong className="text-black block mb-1">2단계. 팀 프로젝트 설계</strong>
+                                    뽑은 카드들을 기반으로 우리 팀만의 <span className="font-semibold text-black">핵심 설계 규칙</span>을 문장으로 완성합니다. 해당 공간에서 <span className="text-[#1A73E8] font-bold">어떤 불편함과 문제를 발견하고 해결할지</span> 프로젝트의 구체적인 아이디어를 설계하세요. (기본 소자 외에 다른 기능을 더 추가해도 좋습니다!)
+                                </div>
+                                <div className="bg-[#F8F9FA] p-3 rounded-xl border border-[#EEF0F2]">
+                                    <strong className="text-black block mb-1">3단계. 스튜디오 구현</strong>
+                                    팀원들과 완성한 기획과 동적 조건들을 바탕으로, <span className="font-semibold text-black">바이브코딩 스튜디오</span>를 통해 프로젝트를 완벽하게 구현해봅니다.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="text-center mb-8">
+                            <h1 className="text-2xl font-black tracking-tight mb-2">랜덤 카드 <span className="text-[#EA4335]">바이브코딩</span></h1>
+                            <p className="text-xs text-[#666] max-w-md mx-auto">
+                                센서 카드와 환경 카드를 융합하고, 아이디어를 자유롭게 덧붙여 우리 팀만의 스마트 램프 솔루션을 설계하세요.
+                            </p>
+                        </div>
+
+                        {/* DRAW AREA */}
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10 w-full mb-8">
+                            
+                            {/* 기능 카드 */}
+                            <div className="flex flex-col items-center gap-3">
+                                <span className="text-[11px] font-bold text-[#666] bg-white border border-[#E5E7EB] px-2.5 py-0.5 rounded-full shadow-sm">⚡ 마이크로비트 소자/기능 (필수)</span>
+                                <div className="card-perspective w-[180px] h-[240px] cursor-pointer" onClick={drawFunc}>
+                                    <div className={`card-inner w-full h-full relative rounded-2xl shadow-md border border-[#E5E7EB] ${isFuncFlipped ? 'card-flipped' : ''}`}>
+                                        <div className="backface-hidden absolute inset-0 bg-black rounded-2xl flex flex-col items-center justify-center p-4 text-center text-white border border-[#333]">
+                                            <div className="w-10 h-10 rounded-xl bg-[#222] border border-[#444] flex items-center justify-center text-lg mb-2 text-[#EA4335]"><i className="fa-solid fa-microchip"></i></div>
+                                            <div className="text-[10px] font-bold tracking-wider opacity-60 font-mono">FUNCTION</div>
+                                        </div>
+                                        <div className="backface-hidden absolute inset-0 bg-white rounded-2xl flex flex-col items-center justify-between p-4 text-center rotate-y-180">
+                                            <div className="text-4xl my-auto">{funcCard?.emoji || '✨'}</div>
+                                            <div>
+                                                <div className="text-xs font-black text-black mb-1">{funcCard?.name || '—'}</div>
+                                                <div className="text-[10px] text-[#666] leading-tight">{funcCard?.desc || ''}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onClick={drawFunc} className="px-4 py-1.5 bg-white border border-gray-300 rounded-full text-[11px] font-bold hover:border-black w-[130px] transition-colors">기능 뽑기</button>
+                            </div>
+
+                            {/* + ICON */}
+                            <div className="text-[#AAA] text-md font-bold bg-white border border-[#E5E7EB] w-8 h-8 rounded-full flex items-center justify-center shadow-sm">
+                                <i className="fa-solid fa-plus text-xs"></i>
+                            </div>
+
+                            {/* 상황 카드 */}
+                            <div className="flex flex-col items-center gap-3">
+                                <span className="text-[11px] font-bold text-[#666] bg-white border border-[#E5E7EB] px-2.5 py-0.5 rounded-full shadow-sm">🌍 적용 공간/상황</span>
+                                <div className="card-perspective w-[180px] h-[240px] cursor-pointer" onClick={drawSit}>
+                                    <div className={`card-inner w-full h-full relative rounded-2xl shadow-md border border-[#E5E7EB] ${isSitFlipped ? 'card-flipped' : ''}`}>
+                                        <div className="backface-hidden absolute inset-0 bg-black rounded-2xl flex flex-col items-center justify-center p-4 text-center text-white border border-[#333]">
+                                            <div className="w-10 h-10 rounded-xl bg-[#222] border border-[#444] flex items-center justify-center text-lg mb-2 text-[#4285F4]"><i className="fa-solid fa-earth-americas"></i></div>
+                                            <div className="text-[10px] font-bold tracking-wider opacity-60 font-mono">CONTEXT</div>
+                                        </div>
+                                        <div className="backface-hidden absolute inset-0 bg-white rounded-2xl flex flex-col items-center justify-between p-4 text-center rotate-y-180">
+                                            <div className="text-4xl my-auto">{sitCard?.emoji || '🏠'}</div>
+                                            <div>
+                                                <div className="text-xs font-black text-black mb-1">{sitCard?.name || '—'}</div>
+                                                <div className="text-[10px] text-[#666] leading-tight">{sitCard?.desc || ''}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onClick={drawSit} className="px-4 py-1.5 bg-white border border-gray-300 rounded-full text-[11px] font-bold hover:border-black w-[130px] transition-colors">상황 뽑기</button>
+                            </div>
+
+                        </div>
+
+                        {/* CONTROL BUTTON */}
+                        <div className="mb-8">
+                            <button onClick={drawAll} className="px-6 py-2.5 bx-pill-btn bx-btn-black text-xs flex items-center gap-2 tracking-wide shadow-md">
+                                <i className="fa-solid fa-dice text-sm"></i>
+                                <span>매칭 카드 일괄 뽑기</span>
+                            </button>
+                        </div>
+
+                        {/* RESULT & CORE DESIGN RULE */}
+                        {showResult && (
+                            <div ref={resultRef} className="w-full bg-white border border-[#D1D5DB] rounded-2xl shadow-xl overflow-hidden animate-fade-in max-w-2xl">
+                                
+                                <div className="p-4 bg-black border-b border-[#333] flex items-center text-white">
+                                    <div className="flex items-center gap-2 text-xs font-bold tracking-tight">
+                                        <div className="w-2 h-2 rounded-full bg-[#EA4335] animate-pulse"></div>
+                                        <span>프로젝트 매칭 조합 확인</span>
+                                    </div>
+                                </div>
+
+                                {/* 프로젝트 핵심 설계 규칙 도출 섹션 */}
+                                <div className="p-6 bg-gradient-to-b from-[#F8F9FA] to-white">
+                                    <div className="text-xs font-bold text-black mb-4 flex items-center gap-1.5">
+                                        <i className="fa-solid fa-pen-clip text-[#4285F4]"></i>
+                                        <span>우리 팀 프로젝트 핵심 설계 규칙 (Design Rule)</span>
+                                    </div>
+                                    
+                                    <div className="bg-white border-2 border-dashed border-[#D1D5DB] p-5 rounded-xl text-xs md:text-sm text-gray-700 leading-relaxed shadow-inner">
+                                        우리 팀은 <span className="bg-[#E8F0FE] text-[#1A73E8] px-2 py-0.5 rounded font-bold mx-1">{funcCard.name}</span> 기능을 활용해 (추가 기능 가능) <span className="bg-[#E6F4EA] text-[#137333] px-2 py-0.5 rounded font-bold mx-1">{sitCard.name}</span> 상황에서 발생하는 <span className="border-b-2 border-black px-6 font-mono text-[#AAA] inline-block font-bold">                 작성하기                 </span> 문제를 해결할 수 있는 프로젝트를 만든다.
+                                    </div>
+                                    
+                                    <div className="mt-4 p-3 bg-[#F4F6F9] rounded-xl text-[11px] text-[#555] flex items-start gap-2">
+                                        <i className="fa-solid fa-circle-info text-[#1A73E8] mt-0.5"></i>
+                                        <span>뽑힌 <b>{funcCard.name}</b>은 반드시 포함되어야 하는 핵심 규칙입니다. 여기에 팀의 기획에 맞게 마이크로비트의 다른 입력/출력 소자를 더 추가해서 규칙을 확장해도 괜찮습니다.</span>
+                                    </div>
+                                </div>
+
+                            </div>
+                        )}
+                    </main>
+
+                    {/* FOOTER */}
+                    <footer className="bg-black text-white px-8 py-5 border-t border-[#222] shrink-0 text-xs flex justify-between items-center z-50">
+                        <div className="flex flex-col gap-1.5">
+                            <strong className="text-sm font-bold tracking-tight">바운더리엑스 (Boundary X)</strong>
+                            <span className="text-[#999] font-normal">"미래 기술을 교실의 책상 위로"</span>
+                        </div>
+                        <div className="text-[#666] font-medium">
+                            © 2026 Boundary X Co. All rights reserved.
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
