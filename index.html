@@ -10,6 +10,8 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -50,7 +52,6 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
         
-        /* Footer Specific Custom Styles */
         .link-desc {
             display: block;
             color: #666;
@@ -64,7 +65,7 @@
     <div id="root" class="flex flex-col min-h-screen justify-between"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useRef } = React;
 
         const INTEL_CARDS = [
             { name: '음성 인식 (음성 지능)', emoji: '🗣️', desc: '사람의 음성을 인식하고 명령어를 전달해요.' },
@@ -115,7 +116,9 @@
             const [decompEnv, setDecompEnv] = useState('');
             const [painPoint, setPainPoint] = useState('');
             
-            const contentRef = useRef(null);
+            // PDF 추출을 위한 상태 및 Ref
+            const step2Ref = useRef(null);
+            const [isExporting, setIsExporting] = useState(false);
 
             const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
@@ -153,12 +156,34 @@
                 setDecompPeople(''); setDecompObject(''); setDecompEnv(''); setPainPoint('');
             };
 
+            // PDF 다운로드 핸들러
+            const handleDownloadPDF = () => {
+                if(!step2Ref.current) return;
+                setIsExporting(true);
+                
+                const opt = {
+                    margin:       15,
+                    filename:     `로봇리믹스_기획서_${new Date().getTime()}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, logging: false, useCORS: true },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+                
+                // html2pdf 라이브러리 실행
+                window.html2pdf().set(opt).from(step2Ref.current).save().then(() => {
+                    setIsExporting(false);
+                }).catch(err => {
+                    console.error("PDF 생성 중 오류 발생:", err);
+                    setIsExporting(false);
+                    alert("PDF 생성 중 문제가 발생했습니다.");
+                });
+            };
+
             const isStep1Complete = isIntelFlipped && isFuncFlipped && isSitFlipped;
             const isStep2Complete = painPoint.trim().length > 0;
 
             return (
                 <div className="flex flex-col min-h-screen bg-[#F8F9FA]">
-                    {/* HEADER */}
                     <header className="flex justify-between items-center bg-black border-b border-[#333] px-6 py-3.5 shrink-0 z-50 shadow-md">
                         <div className="flex items-center gap-3">
                             <a href="https://boundaryx.io" target="_blank" rel="noreferrer" className="flex items-center transition-opacity hover:opacity-80">
@@ -169,10 +194,8 @@
                         </div>
                     </header>
 
-                    {/* MAIN CONTENTS */}
                     <main className="flex-1 max-w-5xl w-full mx-auto p-6 md:p-10 flex flex-col items-center justify-center">
                         
-                        {/* ================= STEP 0: LANDING ================= */}
                         {step === 0 && (
                             <div className="max-w-3xl w-full text-center animate-fade-in">
                                 <div className="mb-12">
@@ -211,10 +234,8 @@
                             </div>
                         )}
 
-                        {/* ================= CHALLENGE STEPS ================= */}
                         {step > 0 && (
                             <div className="w-full flex flex-col items-center">
-                                {/* Stepper */}
                                 <div className="w-full max-w-2xl mb-12">
                                     <div className="flex items-center justify-between relative">
                                         <div className="absolute left-0 top-5 w-full h-0.5 bg-gray-200 -z-10"></div>
@@ -233,14 +254,50 @@
                                     </div>
                                 </div>
 
+                                {/* Step 1 */}
                                 {step === 1 && (
                                     <div className="w-full animate-fade-in flex flex-col items-center">
-                                        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-10 shadow-sm w-full">
-                                            <h2 className="font-black text-lg mb-2 flex items-center gap-2">
-                                                <i className="fa-solid fa-layer-group"></i> 1단계. 카드 뽑기
+                                        <div className="bg-white border-2 border-black rounded-3xl p-8 mb-10 shadow-sm w-full relative overflow-hidden">
+                                            <div className="absolute top-0 left-0 w-2 h-full bg-black"></div>
+                                            <h2 className="font-black text-xl mb-6 flex items-center gap-2">
+                                                <i className="fa-solid fa-dice text-black"></i> 1단계. 로봇 리믹스 카드 뽑기
                                             </h2>
-                                            <p className="text-sm text-gray-500">
-                                                하단의 덱을 활용해 프로젝트의 기반이 될 <b>지능, 기능 카드</b>와 환경을 제시하는 <b>상황 카드</b>를 랜덤 매칭합니다.
+                                            
+                                            <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-[#F8F9FA] rounded-2xl p-6 border border-gray-200">
+                                                <div className="flex flex-col items-center text-center flex-1">
+                                                    <div className="w-12 h-12 bg-black text-white rounded-xl flex items-center justify-center text-xl mb-3 shadow-md">
+                                                        <i className="fa-solid fa-brain"></i>
+                                                    </div>
+                                                    <span className="text-xs font-black mb-1">지능 (Intelligence)</span>
+                                                    <span className="text-[14px] font-bold text-[#1A73E8]">● 입력 (Input)</span>
+                                                    <p className="text-[10px] text-gray-500 mt-2">로봇이 주변을<br/>인지하는 방식</p>
+                                                </div>
+                                                
+                                                <div className="text-gray-300 hidden md:block text-2xl"><i className="fa-solid fa-plus"></i></div>
+                                                
+                                                <div className="flex flex-col items-center text-center flex-1">
+                                                    <div className="w-12 h-12 bg-black text-white rounded-xl flex items-center justify-center text-xl mb-3 shadow-md">
+                                                        <i className="fa-solid fa-robot"></i>
+                                                    </div>
+                                                    <span className="text-xs font-black mb-1">기능 (Function)</span>
+                                                    <span className="text-[14px] font-bold text-[#EA4335]">● 출력 (Output)</span>
+                                                    <p className="text-[10px] text-gray-500 mt-2">로봇이 실제로<br/>움직이는 하드웨어</p>
+                                                </div>
+
+                                                <div className="text-gray-300 hidden md:block text-2xl"><i className="fa-solid fa-at"></i></div>
+
+                                                <div className="flex flex-col items-center text-center flex-1">
+                                                    <div className="w-12 h-12 bg-black text-white rounded-xl flex items-center justify-center text-xl mb-3 shadow-md">
+                                                        <i className="fa-solid fa-earth-americas"></i>
+                                                    </div>
+                                                    <span className="text-xs font-black mb-1">상황 (Situation)</span>
+                                                    <span className="text-[14px] font-bold text-[#34A853]">● 아이디어 (Idea)</span>
+                                                    <p className="text-[10px] text-gray-500 mt-2">로봇이 활약할<br/>공간과 환경</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <p className="text-xs text-gray-500 mt-6 leading-relaxed text-center">
+                                                세 가지 카드를 리믹스하여 <b>"어떤 기술로(지능), 어떤 로봇을 움직여(기능), 어떤 환경(상황)의 문제를 해결할지"</b> 결정하세요.
                                             </p>
                                         </div>
 
@@ -315,6 +372,7 @@
                                     </div>
                                 )}
 
+                                {/* Step 2 */}
                                 {step === 2 && (intelCard && funcCard && sitCard) && (
                                     <div className="w-full animate-fade-in flex flex-col items-center">
                                         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm w-full">
@@ -326,7 +384,10 @@
                                             </p>
                                         </div>
 
-                                        <div className="w-full flex flex-col gap-8 mb-12">
+                                        {/* PDF로 추출될 기획서 영역 (ref 할당 및 패딩/배경색 적용) */}
+                                        <div ref={step2Ref} className="w-full flex flex-col gap-8 mb-8 bg-[#F8F9FA] p-2 rounded-3xl">
+                                            
+                                            {/* 2-1 분해 */}
                                             <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm">
                                                 <div className="flex items-center gap-3 mb-6">
                                                     <span className="bg-black text-white text-xs font-bold px-2.5 py-1 rounded">2-1. 분해</span>
@@ -348,6 +409,7 @@
                                                 </div>
                                             </div>
 
+                                            {/* 2-2 추상화 */}
                                             <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm relative">
                                                 <i className="fa-solid fa-arrow-down absolute -top-6 left-1/2 -translate-x-1/2 text-gray-300 text-2xl bg-[#F8F9FA] rounded-full p-1"></i>
                                                 <div className="flex items-center gap-3 mb-6">
@@ -360,7 +422,21 @@
                                                 </div>
                                             </div>
 
-                                            <div className="w-full bg-white border-[4px] border-black rounded-[40px] p-8 md:p-12 shadow-xl relative overflow-hidden transition-all">
+                                            {/* 💡 확장 팁 (Tip Box) - 2단계와 3단계 사이에 배치 */}
+                                            <div className="w-full bg-[#F6F8FC] border border-[#E8EAED] rounded-2xl p-5 flex gap-4 items-start shadow-sm mx-auto" style={{ width: 'calc(100% - 10px)' }}>
+                                                <div className="bg-white text-2xl p-2 rounded-xl shadow-sm border border-gray-100 flex-shrink-0">
+                                                    💡
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-[#1A73E8] mb-1">바이브코딩 꿀팁! 추가 기능을 자유롭게 융합하세요</h4>
+                                                    <p className="text-xs text-gray-600 leading-relaxed">
+                                                        뽑은 메인 지능/기능 카드는 <b>필수 조건</b>일 뿐입니다. 로봇을 더 똑똑하게 만들고 싶다면 포니봇에 내장된 <b>조도센서, 초음파센서, 스피커, 네오픽셀 LED</b> 등을 얼마든지 추가해서 설계해도 좋습니다!
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* 2-3 핵심 설계 규칙 */}
+                                            <div className="w-full bg-white border-[4px] border-black rounded-[40px] p-8 md:p-12 shadow-xl relative overflow-hidden transition-all mt-2">
                                                 <div className="absolute top-0 left-0 w-full h-2 bg-yellow-300"></div>
                                                 <div className="text-center mb-8">
                                                     <span className="text-[10px] font-black tracking-[0.3em] bg-black text-white px-6 py-1.5 rounded-full uppercase">Robot Design Rule</span>
@@ -376,17 +452,30 @@
                                             </div>
                                         </div>
 
-                                        <div className="flex gap-4">
-                                            <button onClick={resetChallenge} className="px-8 py-3.5 bg-white border-2 border-black rounded-full text-sm font-black hover:bg-gray-50 transition-colors">
+                                        {/* 컨트롤 버튼 영역 */}
+                                        <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+                                            <button onClick={resetChallenge} className="px-8 py-3.5 bg-white border-2 border-gray-300 rounded-full text-sm font-bold hover:border-black transition-colors">
                                                 다시 처음부터
                                             </button>
-                                            <button onClick={nextStep} disabled={!isStep2Complete} className={`px-12 py-3.5 bx-pill-btn text-sm shadow-xl flex items-center gap-2 transition-all ${isStep2Complete ? 'bx-btn-black' : 'bg-gray-200 text-gray-400 cursor-not-allowed border-none shadow-none'}`}>
+                                            
+                                            {/* PDF 다운로드 버튼 추가 */}
+                                            <button 
+                                                onClick={handleDownloadPDF} 
+                                                disabled={isExporting} 
+                                                className={`px-8 py-3.5 bg-white border-2 border-black rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-colors ${isExporting ? 'opacity-50 cursor-wait' : 'hover:bg-gray-50'}`}
+                                            >
+                                                <i className="fa-solid fa-file-pdf text-[#EA4335]"></i> 
+                                                {isExporting ? 'PDF 저장 중...' : '기획서 PDF 저장'}
+                                            </button>
+
+                                            <button onClick={nextStep} disabled={!isStep2Complete} className={`px-12 py-3.5 bx-pill-btn text-sm shadow-xl flex items-center justify-center gap-2 transition-all ${isStep2Complete ? 'bx-btn-black' : 'bg-gray-200 text-gray-400 cursor-not-allowed border-none shadow-none'}`}>
                                                 설계 완료! 3단계 이동 <i className="fa-solid fa-check"></i>
                                             </button>
                                         </div>
                                     </div>
                                 )}
 
+                                {/* Step 3 */}
                                 {step === 3 && (
                                     <div className="w-full animate-fade-in flex flex-col items-center">
                                         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-10 shadow-sm w-full">
@@ -423,11 +512,9 @@
                         )}
                     </main>
 
-                    {/* NEW FOOTER (AI 음성인식 푸터와 동일하게 업데이트) */}
                     <footer className="bg-black text-white px-6 py-12 border-t border-[#222] z-50">
                         <div className="max-w-5xl mx-auto">
                             <div className="flex flex-col md:flex-row justify-between gap-10">
-                                {/* Info Column */}
                                 <div className="flex-1">
                                     <h2 className="text-xl font-bold mb-4">바운더리엑스</h2>
                                     <p className="text-gray-400 text-sm mb-6 leading-relaxed italic">
@@ -435,13 +522,11 @@
                                     </p>
                                     <address className="not-italic text-gray-500 text-[11px] leading-6">
                                         <p>경기도 화성시 동탄첨단산업1로 57 동탄2인큐베이팅센터, 7층 706호</p>
-                                        <p className="mt-1">© 2024 Boundary X Co. All rights reserved.</p>
+                                        <p className="mt-1">© 2026 Boundary X Co. All rights reserved.</p>
                                     </address>
                                 </div>
 
-                                {/* Links Columns */}
                                 <div className="flex flex-row gap-12">
-                                    {/* Product Column */}
                                     <div className="min-w-[120px]">
                                         <h4 className="text-sm font-bold mb-4 text-white">제품 소개</h4>
                                         <ul className="space-y-4">
@@ -456,7 +541,6 @@
                                         </ul>
                                     </div>
 
-                                    {/* Support Column */}
                                     <div className="min-w-[120px]">
                                         <h4 className="text-sm font-bold mb-4 text-white">고객 지원</h4>
                                         <ul className="space-y-4">
