@@ -49,6 +49,15 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
+        
+        /* Footer Specific Custom Styles */
+        .link-desc {
+            display: block;
+            color: #666;
+            font-size: 10px;
+            margin-top: 2px;
+            font-weight: 400;
+        }
     </style>
 </head>
 <body class="bg-[#F8F9FA] text-[#111] overflow-x-hidden min-h-screen flex flex-col">
@@ -101,7 +110,6 @@
             const [isFuncFlipped, setIsFuncFlipped] = useState(false);
             const [isSitFlipped, setIsSitFlipped] = useState(false);
             
-            // 2단계 폼 상태 관리
             const [decompPeople, setDecompPeople] = useState('');
             const [decompObject, setDecompObject] = useState('');
             const [decompEnv, setDecompEnv] = useState('');
@@ -203,7 +211,7 @@
                             </div>
                         )}
 
-                        {/* ================= STEP 1, 2, 3 ================= */}
+                        {/* ================= CHALLENGE STEPS ================= */}
                         {step > 0 && (
                             <div className="w-full flex flex-col items-center">
                                 {/* Stepper */}
@@ -225,7 +233,6 @@
                                     </div>
                                 </div>
 
-                                {/* Step 1: 카드 뽑기 */}
                                 {step === 1 && (
                                     <div className="w-full animate-fade-in flex flex-col items-center">
                                         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-10 shadow-sm w-full">
@@ -308,10 +315,8 @@
                                     </div>
                                 )}
 
-                                {/* Step 2: 프로젝트 설계 (인터랙티브 기획) */}
                                 {step === 2 && (intelCard && funcCard && sitCard) && (
                                     <div className="w-full animate-fade-in flex flex-col items-center">
-                                        
                                         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm w-full">
                                             <h2 className="font-black text-lg mb-2 flex items-center gap-2">
                                                 <i className="fa-solid fa-pen-ruler"></i> 2단계. 팀 프로젝트 설계
@@ -322,7 +327,6 @@
                                         </div>
 
                                         <div className="w-full flex flex-col gap-8 mb-12">
-                                            {/* 2-1: 분해 (Decomposition) */}
                                             <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm">
                                                 <div className="flex items-center gap-3 mb-6">
                                                     <span className="bg-black text-white text-xs font-bold px-2.5 py-1 rounded">2-1. 분해</span>
@@ -344,7 +348,6 @@
                                                 </div>
                                             </div>
 
-                                            {/* 2-2: 추상화 (Abstraction) */}
                                             <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm relative">
                                                 <i className="fa-solid fa-arrow-down absolute -top-6 left-1/2 -translate-x-1/2 text-gray-300 text-2xl bg-[#F8F9FA] rounded-full p-1"></i>
                                                 <div className="flex items-center gap-3 mb-6">
@@ -357,7 +360,6 @@
                                                 </div>
                                             </div>
 
-                                            {/* 2-3: 핵심 설계 규칙 (Design Rule) */}
                                             <div className="w-full bg-white border-[4px] border-black rounded-[40px] p-8 md:p-12 shadow-xl relative overflow-hidden transition-all">
                                                 <div className="absolute top-0 left-0 w-full h-2 bg-yellow-300"></div>
                                                 <div className="text-center mb-8">
@@ -378,18 +380,13 @@
                                             <button onClick={resetChallenge} className="px-8 py-3.5 bg-white border-2 border-black rounded-full text-sm font-black hover:bg-gray-50 transition-colors">
                                                 다시 처음부터
                                             </button>
-                                            <button 
-                                                onClick={nextStep} 
-                                                disabled={!isStep2Complete}
-                                                className={`px-12 py-3.5 bx-pill-btn text-sm shadow-xl flex items-center gap-2 transition-all ${isStep2Complete ? 'bx-btn-black' : 'bg-gray-200 text-gray-400 cursor-not-allowed border-none shadow-none'}`}
-                                            >
+                                            <button onClick={nextStep} disabled={!isStep2Complete} className={`px-12 py-3.5 bx-pill-btn text-sm shadow-xl flex items-center gap-2 transition-all ${isStep2Complete ? 'bx-btn-black' : 'bg-gray-200 text-gray-400 cursor-not-allowed border-none shadow-none'}`}>
                                                 설계 완료! 3단계 이동 <i className="fa-solid fa-check"></i>
                                             </button>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Step 3: 프로젝트 완성 */}
                                 {step === 3 && (
                                     <div className="w-full animate-fade-in flex flex-col items-center">
                                         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-10 shadow-sm w-full">
@@ -403,10 +400,10 @@
                                         </div>
 
                                         <div className="bg-black text-white w-full rounded-[40px] p-12 mb-12 text-center shadow-2xl">
-                                            <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center text-4xl mb-6 mx-auto border border-white/20">
-                                                🛰️
+                                            <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center text-4xl mb-6 mx-auto border border-white/20 text-white">
+                                                🚀
                                             </div>
-                                            <h3 className="text-2xl font-black mb-4 tracking-tight">도전을 시작할 준비가 되었나요?</h3>
+                                            <h3 className="text-2xl font-black mb-4 tracking-tight text-white">도전을 시작할 준비가 되었나요?</h3>
                                             <p className="text-gray-400 text-sm mb-10 leading-relaxed">
                                                 설계한 규칙에 맞춰 지능형 모델을 학습시키고<br/>
                                                 로봇의 동작을 코딩하여 미션을 해결해보세요.
@@ -424,22 +421,52 @@
                                 )}
                             </div>
                         )}
-
                     </main>
 
-                    {/* FOOTER */}
-                    <footer className="bg-black text-white px-8 py-5 border-t border-[#222] shrink-0 text-xs flex flex-col md:flex-row justify-between items-center gap-4 z-50">
-                        <div className="flex flex-col gap-1.5 text-center md:text-left">
-                            <strong className="text-sm font-bold tracking-tight">바운더리엑스 (Boundary X)</strong>
-                            <span className="text-[#999] font-normal">"미래 기술을 교실의 책상 위로"</span>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
-                            <div className="flex items-center gap-2 bg-[#1a1a1a] px-3 py-1.5 rounded-full border border-[#333]">
-                                <i className="fa-solid fa-circle-exclamation text-[#4285F4]"></i>
-                                <span className="text-[#ccc]">사용법: 생성된 코드를 <b>MakeCode JavaScript 탭</b>에 붙여넣으세요.</span>
-                            </div>
-                            <div className="text-[#666] font-medium">
-                                © 2026 Boundary X Co. All rights reserved.
+                    {/* NEW FOOTER (AI 음성인식 푸터와 동일하게 업데이트) */}
+                    <footer className="bg-black text-white px-6 py-12 border-t border-[#222] z-50">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="flex flex-col md:flex-row justify-between gap-10">
+                                {/* Info Column */}
+                                <div className="flex-1">
+                                    <h2 className="text-xl font-bold mb-4">바운더리엑스</h2>
+                                    <p className="text-gray-400 text-sm mb-6 leading-relaxed italic">
+                                        "우리는 산업과 교육의 경계를 허물고, 미래 기술을 교실의 책상 위로 옮기는 사람들입니다"
+                                    </p>
+                                    <address className="not-italic text-gray-500 text-[11px] leading-6">
+                                        <p>경기도 화성시 동탄첨단산업1로 57 동탄2인큐베이팅센터, 7층 706호</p>
+                                        <p className="mt-1">© 2024 Boundary X Co. All rights reserved.</p>
+                                    </address>
+                                </div>
+
+                                {/* Links Columns */}
+                                <div className="flex flex-row gap-12">
+                                    {/* Product Column */}
+                                    <div className="min-w-[120px]">
+                                        <h4 className="text-sm font-bold mb-4 text-white">제품 소개</h4>
+                                        <ul className="space-y-4">
+                                            <li>
+                                                <a href="https://boundaryx.io/shop/?idx=25" target="_blank" className="text-gray-400 hover:text-white text-xs block font-bold">AI 비트런</a>
+                                                <span className="link-desc">마이크로비트 기반 이족보행로봇</span>
+                                            </li>
+                                            <li>
+                                                <a href="https://boundaryx.io/shop/?idx=26" target="_blank" className="text-gray-400 hover:text-white text-xs block font-bold">AI 포니봇</a>
+                                                <span className="link-desc">마이크로비트 기반 모빌리티로봇</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    {/* Support Column */}
+                                    <div className="min-w-[120px]">
+                                        <h4 className="text-sm font-bold mb-4 text-white">고객 지원</h4>
+                                        <ul className="space-y-4">
+                                            <li>
+                                                <a href="https://boundaryx.io/contact" target="_blank" className="text-gray-400 hover:text-white text-xs block font-bold">문의처</a>
+                                                <span className="link-desc">제품 문의 | 제휴 문의 | 연수 문의</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </footer>
