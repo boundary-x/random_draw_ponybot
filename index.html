@@ -145,7 +145,7 @@
             const handleDownloadPDF = () => {
                 setIsExporting(true);
                 const element = pdfSourceRef.current;
-                element.style.display = 'block';
+                element.style.display = 'block'; // 일시적으로 보이게 설정
 
                 const opt = {
                     margin: 10,
@@ -156,7 +156,7 @@
                 };
 
                 window.html2pdf().set(opt).from(element).save().then(() => {
-                    element.style.display = 'none';
+                    element.style.display = 'none'; // 다시 숨김
                     setIsExporting(false);
                 });
             };
@@ -330,48 +330,15 @@
                                 {step === 3 && (
                                     <div className="w-full animate-fade-in flex flex-col items-center">
                                         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-10 shadow-sm w-full text-center">
-                                            <h2 className="font-black text-lg mb-2 flex items-center justify-center gap-2">
-                                                <i className="fa-solid fa-rocket"></i> 3단계. 로봇 프로젝트 완성
-                                            </h2>
-                                            <p className="text-sm text-gray-500">
-                                                팀원들과 완성한 핵심 설계 규칙을 바탕으로 프로젝트를 실현해봅시다.
-                                            </p>
+                                            <h2 className="font-black text-lg mb-2 flex items-center justify-center gap-2"><i className="fa-solid fa-rocket"></i> 3단계. 로봇 프로젝트 완성</h2>
+                                            <p className="text-sm text-gray-500">팀원들과 완성한 규칙을 바탕으로 프로젝트를 실현해봅시다.</p>
                                         </div>
-
-                                        <div className="bg-black text-white w-full rounded-[40px] p-12 mb-12 text-center shadow-2xl relative overflow-hidden">
-                                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-yellow-300 opacity-5 blur-[100px] pointer-events-none"></div>
-                                            
-                                            <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center text-4xl mb-6 mx-auto border border-white/20 text-white relative z-10">
-                                                🚀
-                                            </div>
-                                            
-                                            <h3 className="text-2xl font-black mb-4 tracking-tight text-white relative z-10">
-                                                도전을 시작할 준비가 되었나요?
-                                            </h3>
-                                            <p className="text-gray-400 text-sm mb-10 leading-relaxed relative z-10">
-                                                설계한 규칙에 맞춰 지능형 모델을 학습시키고<br/>
-                                                로봇의 동작을 코딩하여 미션을 해결해보세요.
-                                            </p>
-
-                                            <div className="relative z-10 mb-10 max-w-lg mx-auto py-6 border-y border-[#333]">
-                                                <i className="fa-solid fa-quote-left text-gray-600 text-2xl mb-4 block"></i>
-                                                <p className="text-lg font-bold text-yellow-300 mb-3 tracking-wide break-keep">
-                                                    "미래를 예측하는 가장 좋은 방법은,<br/> 스스로 미래를 만드는 것이다."
-                                                </p>
-                                                <p className="text-xs text-gray-500 font-medium">
-                                                    - 컴퓨터 과학의 선구자, 앨런 케이 (Alan Kay) -
-                                                </p>
-                                            </div>
-
-                                            <a href="https://boundary-x.github.io/vibe_coding_studio/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-16 py-4 bg-yellow-300 hover:bg-yellow-400 text-black rounded-full font-black text-lg transition-all shadow-[0_10px_30px_rgba(253,224,71,0.3)] relative z-10">
-                                                <i className="fa-solid fa-laptop-code"></i>
-                                                바이브코딩 스튜디오 열기
-                                            </a>
+                                        <div className="bg-black text-white w-full rounded-[40px] p-12 mb-12 text-center shadow-2xl">
+                                            <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center text-4xl mb-6 mx-auto border border-white/20 text-white">🚀</div>
+                                            <h3 className="text-2xl font-black mb-4 tracking-tight">도전을 시작할 준비가 되었나요?</h3>
+                                            <a href="https://boundary-x.github.io/vibe_coding_studio/" target="_blank" className="inline-flex items-center gap-3 px-16 py-4 bg-yellow-300 hover:bg-yellow-400 text-black rounded-full font-black text-lg shadow-xl"><i className="fa-solid fa-laptop-code"></i> 바이브코딩 스튜디오 열기</a>
                                         </div>
-
-                                        <button onClick={() => setStep(0)} className="text-xs font-black text-gray-400 hover:text-black transition-colors underline underline-offset-8">
-                                            챌린지 프로세스 다시 확인하기
-                                        </button>
+                                        <button onClick={() => setStep(0)} className="text-xs font-black text-gray-400 hover:text-black underline underline-offset-8">처음으로 돌아가기</button>
                                     </div>
                                 )}
                             </div>
@@ -379,64 +346,64 @@
                         
                         {/* ================= PDF EXPORT TEMPLATE (HIDDEN) ================= */}
                         <div id="pdf-template" ref={pdfSourceRef}>
-                            <div style={{textAlign: 'center', marginBottom: '30px', borderBottom: '2px solid #000', paddingBottom: '20px'}}>
+                            <div style={{textAlign: 'center', marginBottom: '30px'}}>
                                 <img src="https://raw.githubusercontent.com/boundary-x/ai_voice_recognition/refs/heads/main/boundaryx_logo.png" style={{height: '25px', marginBottom: '10px'}} />
-                                <h1 style={{fontSize: '24px', fontWeight: '900', marginTop: '10px'}}>로봇 리믹스 챌린지 프로젝트 기획서</h1>
-                                <p style={{fontSize: '11px', color: '#666', marginTop: '5px'}}>AI 지능과 로봇 하드웨어의 융합을 통한 문제 해결 설계도</p>
+                                <h1 style={{fontSize: '28px', fontWeight: '900'}}>로봇 리믹스 챌린지 프로젝트 기획서</h1>
+                                <p style={{fontSize: '12px', color: '#666'}}>AI 기술과 하드웨어 융합을 통한 문제 해결 솔루션</p>
                             </div>
 
-                            <div style={{display: 'flex', gap: '15px', marginBottom: '30px'}}>
-                                <div style={{flex: 1, border: '1px solid #ddd', padding: '15px', borderRadius: '10px', textAlign: 'center'}}>
-                                    <div style={{fontSize: '10px', color: '#888', fontWeight: 'bold'}}>1. 지능 (입력)</div>
-                                    <div style={{fontSize: '16px', fontWeight: 'bold', marginTop: '5px'}}>{intelCard?.name}</div>
+                            <div className="pdf-section" style={{display: 'flex', justifyContent: 'space-around', background: '#F8F9FA'}}>
+                                <div style={{textAlign: 'center'}}>
+                                    <div className="pdf-label">지능 (입력)</div>
+                                    <div className="pdf-value">{intelCard?.name}</div>
                                 </div>
-                                <div style={{flex: 1, border: '1px solid #ddd', padding: '15px', borderRadius: '10px', textAlign: 'center'}}>
-                                    <div style={{fontSize: '10px', color: '#888', fontWeight: 'bold'}}>2. 기능 (출력)</div>
-                                    <div style={{fontSize: '16px', fontWeight: 'bold', marginTop: '5px'}}>{funcCard?.name}</div>
+                                <div style={{textAlign: 'center'}}>
+                                    <div className="pdf-label">기능 (출력)</div>
+                                    <div className="pdf-value">{funcCard?.name}</div>
                                 </div>
-                                <div style={{flex: 1, border: '1px solid #ddd', padding: '15px', borderRadius: '10px', textAlign: 'center'}}>
-                                    <div style={{fontSize: '10px', color: '#888', fontWeight: 'bold'}}>3. 상황 (환경)</div>
-                                    <div style={{fontSize: '16px', fontWeight: 'bold', marginTop: '5px'}}>{sitCard?.name}</div>
-                                </div>
-                            </div>
-
-                            <div style={{border: '1px solid #000', padding: '20px', borderRadius: '15px', marginBottom: '30px'}}>
-                                <div style={{fontSize: '12px', fontWeight: 'bold', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '15px'}}>2-1. 공간 해체 (Decomposition)</div>
-                                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px'}}>
-                                    <div>
-                                        <div style={{fontSize: '10px', color: '#999'}}>사람</div>
-                                        <div style={{fontSize: '14px', borderBottom: '1px solid #eee', padding: '8px 0'}}>{decompPeople || '(미기재)'}</div>
-                                    </div>
-                                    <div>
-                                        <div style={{fontSize: '10px', color: '#999'}}>사물</div>
-                                        <div style={{fontSize: '14px', borderBottom: '1px solid #eee', padding: '8px 0'}}>{decompObject || '(미기재)'}</div>
-                                    </div>
-                                    <div>
-                                        <div style={{fontSize: '10px', color: '#999'}}>환경</div>
-                                        <div style={{fontSize: '14px', borderBottom: '1px solid #eee', padding: '8px 0'}}>{decompEnv || '(미기재)'}</div>
-                                    </div>
+                                <div style={{textAlign: 'center'}}>
+                                    <div className="pdf-label">상황 (환경)</div>
+                                    <div className="pdf-value">{sitCard?.name}</div>
                                 </div>
                             </div>
 
-                            <div style={{border: '1px solid #000', padding: '20px', borderRadius: '15px', marginBottom: '30px', background: '#f9f9f9'}}>
-                                <div style={{fontSize: '12px', fontWeight: 'bold', marginBottom: '10px'}}>2-2. 문제 정의 (Pain Point)</div>
-                                <p style={{fontSize: '15px', lineHeight: '1.6', minHeight: '40px'}}>
+                            <div className="pdf-section">
+                                <div className="pdf-label">2-1. 공간 해체 (Decomposition)</div>
+                                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginTop: '10px'}}>
+                                    <div>
+                                        <div style={{fontSize: '10px', color: '#888'}}>사람 (누가 있을까?)</div>
+                                        <div style={{borderBottom: '1px solid #ddd', padding: '5px 0'}}>{decompPeople || '(미기재)'}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{fontSize: '10px', color: '#888'}}>사물 (무엇이 있을까?)</div>
+                                        <div style={{borderBottom: '1px solid #ddd', padding: '5px 0'}}>{decompObject || '(미기재)'}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{fontSize: '10px', color: '#888'}}>환경 (어떤 특징이?)</div>
+                                        <div style={{borderBottom: '1px solid #ddd', padding: '5px 0'}}>{decompEnv || '(미기재)'}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pdf-section">
+                                <div className="pdf-label">2-2. 문제 정의 (Abstraction)</div>
+                                <p style={{fontSize: '14px', marginTop: '10px', lineHeight: '1.6', background: '#FFF5F5', padding: '10px', borderRadius: '5px', border: '1px solid #FECACA'}}>
                                     {painPoint || '정의된 문제가 없습니다.'}
                                 </p>
                             </div>
 
-                            <div style={{background: '#000', color: '#fff', padding: '40px', borderRadius: '25px', textAlign: 'center'}}>
-                                <div style={{fontSize: '10px', letterSpacing: '4px', opacity: '0.6', marginBottom: '20px'}}>ROBOT DESIGN RULE</div>
-                                <div style={{fontSize: '19px', fontWeight: 'bold', lineHeight: '2'}}>
-                                    우리 팀은 <span style={{color: '#FDE047'}}>{intelCard?.name}</span> 지능을 활용하고,<br/>
-                                    <span style={{color: '#FDE047'}}>{funcCard?.name}</span> 기능을 움직여 <br/>
-                                    <span style={{color: '#FDE047'}}>{sitCard?.name}</span> 상황에서 발생하는 <br/>
-                                    <span style={{textDecoration: 'underline'}}>{painPoint}</span> 문제를 해결한다.
+                            <div className="pdf-section" style={{background: '#000', color: '#fff', textAlign: 'center', padding: '30px'}}>
+                                <div style={{fontSize: '10px', letterSpacing: '3px', marginBottom: '15px', opacity: '0.7'}}>CORE DESIGN RULE</div>
+                                <div style={{fontSize: '18px', fontWeight: 'bold', lineHeight: '1.8'}}>
+                                    우리 팀은 <span style={{color: '#FDE047'}}>{intelCard?.name}</span> 기능을 활용하고, <br/>
+                                    <span style={{color: '#FDE047'}}>{funcCard?.name}</span> 장치를 움직여 <br/>
+                                    <span style={{color: '#FDE047'}}>{sitCard?.name}</span> 환경에서 발생하는 <br/>
+                                    <span style={{textDecoration: 'underline'}}>{painPoint}</span> 문제를 해결하는 로봇을 만든다.
                                 </div>
                             </div>
 
-                            <div style={{marginTop: '50px', borderTop: '1px solid #eee', paddingTop: '20px', textAlign: 'center', fontSize: '10px', color: '#aaa'}}>
-                                본 기획서는 Boundary X 로봇 리믹스 챌린지를 통해 생성되었습니다. | vibe.boundaryx.io
+                            <div style={{marginTop: '40px', fontSize: '10px', color: '#AAA', textAlign: 'center', borderTop: '1px solid #EEE', paddingTop: '20px'}}>
+                                본 문서는 Boundary X 로봇 리믹스 챌린지를 통해 생성되었습니다. | vibe.boundaryx.io
                             </div>
                         </div>
 
@@ -446,26 +413,15 @@
                         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between gap-10">
                             <div className="flex-1">
                                 <h2 className="text-xl font-bold mb-4">바운더리엑스</h2>
-                                <p className="text-gray-400 text-sm mb-6 leading-relaxed italic">"우리는 산업과 교육의 경계를 허물고, 미래 기술을 교실의 책상 위로 옮기는 사람들입니다"</p>
-                                <address className="not-italic text-gray-500 text-[11px] leading-6">
+                                <p className="text-gray-400 text-sm mb-6 leading-relaxed">"우리는 산업과 교육의 경계를 허물고, 미래 기술을 교실의 책상 위로 옮기는 사람들입니다"</p>
+                                <address className="not-italic text-gray-500 text-[11px]">
                                     <p>경기도 화성시 동탄첨단산업1로 57 동탄2인큐베이팅센터, 7층 706호</p>
                                     <p className="mt-1">© 2026 Boundary X Co. All rights reserved.</p>
                                 </address>
                             </div>
                             <div className="flex flex-row gap-12">
-                                <div className="min-w-[120px]">
-                                    <h4 className="text-sm font-bold mb-4 text-white">제품 소개</h4>
-                                    <ul className="space-y-4">
-                                        <li><a href="https://boundaryx.io/shop/?idx=25" target="_blank" className="text-gray-400 hover:text-white text-xs font-bold block">AI 비트런</a><span className="link-desc">이족보행로봇</span></li>
-                                        <li><a href="https://boundaryx.io/shop/?idx=26" target="_blank" className="text-gray-400 hover:text-white text-xs font-bold block">AI 포니봇</a><span className="link-desc">모빌리티로봇</span></li>
-                                    </ul>
-                                </div>
-                                <div className="min-w-[120px]">
-                                    <h4 className="text-sm font-bold mb-4 text-white">고객 지원</h4>
-                                    <ul className="space-y-4">
-                                        <li><a href="https://boundaryx.io/contact" target="_blank" className="text-gray-400 hover:text-white text-xs font-bold block">문의처</a><span className="link-desc">제품 | 제휴 | 연수 문의</span></li>
-                                    </ul>
-                                </div>
+                                <div className="min-w-[120px]"><h4 className="text-sm font-bold mb-4 text-white">제품 소개</h4><ul className="space-y-4"><li><a href="https://boundaryx.io/shop/?idx=25" target="_blank" className="text-gray-400 text-xs font-bold block">AI 비트런</a><span className="link-desc">이족보행로봇</span></li><li><a href="https://boundaryx.io/shop/?idx=26" target="_blank" className="text-gray-400 text-xs font-bold block">AI 포니봇</a><span className="link-desc">모빌리티로봇</span></li></ul></div>
+                                <div className="min-w-[120px]"><h4 className="text-sm font-bold mb-4 text-white">고객 지원</h4><ul className="space-y-4"><li><a href="https://boundaryx.io/contact" target="_blank" className="text-gray-400 text-xs font-bold block">문의처</a><span className="link-desc">제품 | 제휴 | 연수 문의</span></li></ul></div>
                             </div>
                         </div>
                     </footer>
