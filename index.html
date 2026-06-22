@@ -8,7 +8,7 @@
     
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.24.4/babel.min.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -62,7 +62,7 @@
 <body class="bg-[#F8F9FA] text-[#111] overflow-x-hidden min-h-screen flex flex-col">
     <div id="root" class="flex flex-col min-h-screen justify-between"></div>
 
-    <script type="text/babel">
+    <script type="text/babel" data-presets="react,env">
         const { useState, useRef } = React;
 
         const INTEL_CARDS = [
