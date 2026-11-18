@@ -15,6 +15,15 @@ for (const mode of ['voice','hand']) {
     assert.ok(text.includes('stop'));
     assert.ok(text.includes('화재 현장'));
     assert.ok(text.includes('NewLine'));
+    assert.ok(text.includes('왼쪽 회전(↶)은 DirectionControl.Clockwise'));
+    assert.ok(text.includes('bluetooth 확장이 필요하다'));
+    assert.ok(text.includes('control.deviceName()'));
+    assert.ok(text.includes('IconNames.Yes'));
+    assert.ok(text.includes('IconNames.No'));
+    assert.ok(text.includes('aiPonybot.showString(text, column, row, 1)'));
+    assert.ok(text.includes('동작 판단용 원문은 자르지 않고 보존'));
+    assert.ok(text.includes('같은 ID 반복 수신마다 다시 그리지 않는다'));
+    assert.ok(!text.includes('추가 LED/센서 기능은 요청하지 않았으므로'));
     assert.ok(text.includes(mode==='hand'?'1000ms':'한 번만 전송'));
     assert.ok(text.includes(hardware==='servo'?'서보 1번을 90도':'최대 1초'));
   }
