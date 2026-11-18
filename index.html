@@ -235,8 +235,7 @@
                 <div className="w-full animate-fade-in">
                     <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
                         <h2 className="font-black text-xl mb-2">3단계. 프롬프트 만들기</h2>
-                        <p className="text-sm text-gray-600">블루투스로 어떤 데이터가 들어오면 어떻게 움직일지 정해보세요.</p>
-                        <p className="text-xs text-gray-500 mt-2">프롬프트는 이 화면에서 규칙을 조합해 만듭니다. AI API나 접속키가 필요하지 않습니다.</p>
+                        <p className="text-sm text-gray-600">AI 웹앱에서 블루투스로 어떤 데이터가 들어오면 어떻게 움직일지 동작에 대한 프롬프트를 구조화해봅시다.</p>
                     </div>
                     <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mb-6">
                         <h3 className="font-bold mb-2">우리 팀의 핵심 설계 원칙</h3>
@@ -284,13 +283,6 @@
                         <b>자동으로 포함되는 정지 규칙</b>
                         <p><code>stop</code> 수신·연결 해제 시 이동 정지 및 진행 동작 취소. 서보는 마지막 목표각을 유지합니다.</p>
                         <p>{mode === 'hand' ? '같은 ID 반복 수신으로 동작 시간을 늘리지 않습니다. 1초 동안 유효 데이터가 없어도 이동을 멈춥니다. 같은 동작을 다시 하려면 다른 ID 또는 stop을 먼저 보내세요.' : '음성 명령은 수신할 때마다 한 번 실행합니다. 다음 음성 입력에서 같은 명령을 다시 보내면 다시 실행합니다.'}</p>
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-2xl p-5 text-sm leading-6 mb-6">
-                        <b>기본으로 포함되는 상태 표시</b>
-                        <p>micro:bit LED: 연결 성공 ✓ / 미연결·연결 해제 ×</p>
-                        <p>포니봇 OLED: 블루투스 장치 식별 이름, 연결 상태, 마지막 수신 데이터</p>
-                        <p className="text-xs text-gray-500 mt-2">이 수업에서는 Bluetooth와 충돌하는 네오픽셀 블록을 사용하지 않습니다. 상태 표시는 내장 LED와 OLED를 사용합니다.</p>
-                        <p className="text-xs text-gray-500 mt-2">장치 이름은 micro:bit의 고유 이름을 사용합니다. 수신 데이터는 ID1, forward, stop처럼 실제 들어온 값으로 표시합니다.</p>
                     </div>
                     {errors.length > 0 && <ul role="alert" className="text-sm text-red-700 mb-4 list-disc pl-5">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
                     <button onClick={generate} disabled={errors.length > 0} className="px-8 py-3 bx-pill-btn bx-btn-black disabled:opacity-40">프롬프트 만들기</button>
