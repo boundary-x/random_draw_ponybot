@@ -67,7 +67,7 @@
 
         const INTEL_CARDS = [
             { name: '음성 인식 (음성 지능)', emoji: '🗣️', desc: '사람의 음성을 인식하고 명령어를 전달해요.' },
-            { name: '포즈 인식 (시각 지능)', emoji: '🧘', desc: '사람의 포즈 데이터를 학습하고 분류해요.' },
+            { name: 'KNN 핸드 포즈 분류', emoji: '🧘', desc: '손 모양을 학습하고 ID별로 분류해요.' },
         ];
 
         const FUNC_CARDS = [
@@ -97,6 +97,195 @@
             { name: '레스토랑 주방', emoji: '🍳', desc: '물과 불을 동시에 사용하며, 바닥이 미끄럽고 동선이 매우 좁고 복잡한 실내' },
             { name: '고대 유적지', emoji: '🏺', desc: '아주 작은 충격에도 훼손될 수 있는 약한 구조물과 좁은 통로로 이루어진 미지의 공간' },
         ];
+
+        
+        // PROMPT_BUILDER_START
+        const VOICE_VALUES = ['forward', 'backward', 'left', 'right', 'stop', 'ring', 'name', 'happy', 'angry', 'dance'];
+        const ACTIONS = { forward: '앞으로 이동', backward: '뒤로 이동', left: '왼쪽 회전', right: '오른쪽 회전', slideLeft: '왼쪽 옆 이동', slideRight: '오른쪽 옆 이동', servo: '서보 각도 설정', stop: '이동 정지' };
+        function validateRules(mode, hardware, rules) {
+            const errors = [], seen = new Set();
+            if (!rules.length) errors.push('동작 규칙을 한 개 이상 추가해주세요.');
+            rules.forEach((r, i) => {
+                const prefix = (i + 1) + '번 규칙: ';
+                if (!(mode === 'hand' ? /^ID[1-9]\d*$/.test(r.value) : /^[A-Za-z0-9_-]{1,20}$/.test(r.value)) || r.value === 'stop') errors.push(prefix + (mode === 'hand' ? 'ID1, ID2처럼 실제 학습 ID를 입력해주세요.' : '전송값은 영문·숫자·밑줄·하이픈으로 1~20자 입력해주세요.') + ' stop은 자동 정지 규칙입니다.');
+                if (seen.has(r.value)) errors.push(prefix + '이미 사용한 수신값입니다.');
+                seen.add(r.value);
+                if (!ACTIONS[r.action] || (hardware === 'servo' && !['servo','stop'].includes(r.action)) || (hardware === 'motor' && r.action === 'servo')) errors.push(prefix + '선택한 카드에 맞는 동작을 선택해주세요.');
+                if (r.action === 'servo') {
+                    if (!Number.isInteger(Number(r.port)) || Number(r.port) < 1 || Number(r.port) > 8 || r.angle === '' || !Number.isFinite(Number(r.angle)) || Number(r.angle) < 0 || Number(r.angle) > 180) errors.push(prefix + '서보 번호 1~8, 각도 0~180을 입력해주세요.');
+                } else if (r.action !== 'stop') {
+                    if (r.speed === '' || !Number.isFinite(Number(r.speed)) || Number(r.speed) < 1 || Number(r.speed) > 100) errors.push(prefix + '속도 값을 1~100으로 입력해주세요.');
+                    if (r.seconds === '' || !Number.isFinite(Number(r.seconds)) || Number(r.seconds) < 0.1 || Number(r.seconds) > 10) errors.push(prefix + '동작 시간을 0.1~10초로 입력해주세요.');
+                }
+            });
+            return errors;
+        }
+        function buildPrompt(context, mode, hardware, rules) {
+            const errors = validateRules(mode, hardware, rules);
+            if (errors.length) throw new Error(errors.join('\n'));
+            const mapping = rules.map(r => {
+                const detail = r.action === 'servo' ? '서보 ' + r.port + '번을 ' + r.angle + '도로 설정 (장착 구조에 맞는 범위인지 확인)'
+                    : r.action === 'stop' ? '모든 이동 모터 정지, 진행 동작 취소'
+                    : ACTIONS[r.action] + ', 속도 인수 ' + r.speed + ', 최대 ' + r.seconds + '초 후 모든 이동 모터 정지';
+                return '- 수신 문자열 ' + JSON.stringify(r.value) + ' → ' + detail + (r.note.trim() ? ' / 학생 설명: ' + JSON.stringify(r.note.trim()) : '');
+            }).join('\n');
+            return [
+                'AI 포니봇(micro:bit V2)용 MakeCode JavaScript/TypeScript 코드를 작성해주세요.',
+                '',
+                '[수업 프로젝트 배경 — 학생이 작성한 맥락]',
+                '상황 카드: ' + context.situation,
+                '사람: ' + (context.people.trim() || '미입력'),
+                '사물: ' + (context.objects.trim() || '미입력'),
+                '환경: ' + (context.environment.trim() || '미입력'),
+                '해결할 핵심 문제: ' + context.problem,
+                '필수 지능: ' + (mode === 'hand' ? 'KNN 핸드 포즈 분류' : '음성 인식'),
+                '필수 기능: ' + (hardware === 'servo' ? '서보 모터' : '포니봇 모터'),
+                '상황은 교실에서 모형으로 시연한다. 배경 설명에서 센서·자율 탐색·실제 재난 대응 기능을 추정하여 추가하지 않는다. 아래 동작표를 구현 기준으로 삼는다.',
+                '',
+                '[AI 웹앱 → 포니봇 통신]',
+                'AI 인식은 외부 웹앱에서 수행한다. 포니봇에 음성/영상 인식이나 AI API 호출을 구현하지 않는다.',
+                'Bluetooth UART 서비스를 시작하고 줄바꿈(LF, \\n)으로 끝나는 문자열을 수신한다.',
+                'bluetooth.startUartService(), bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), ...), bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine))를 사용한다.',
+                '줄 구분자를 제외한 수신 문자열을 대소문자까지 정확히 비교한다. 숫자로 변환하거나 parseHandPoseUnified/parseUARTUnified로 분석하지 않는다.',
+                mode === 'hand'
+                    ? 'KNN 앱은 손 모양 이름이 아닌 ID1, ID2 등의 학습 ID를 전송한다. 결과 변화 또는 마지막 성공 전송 후 100ms 초과 시 재전송할 수 있다. 인식 중지나 약 500ms 손 감지 소실 시 stop을 보낸다. 좌표·확률 데이터는 전송되지 않는다.'
+                    : '음성 앱은 말한 한국어 문장이 아닌 매핑된 문자열을 전송한다. 기본값: 전진/앞으로/출발→forward, 뒤로/후진→backward, 멈춰/정지→stop, 좌회전/왼쪽→left, 우회전/오른쪽→right. 사용자 명령은 앱에서 지정한 전송값과 동작표가 정확히 일치해야 한다. 음성 v2는 한 번 누른 세션에서 같은 값을 한 번만 전송한다.',
+                '',
+                '[수신값별 동작 — 모두 구현]',
+                mapping,
+                '- 수신 문자열 "stop" → 모든 이동 모터 즉시 정지, 진행 중인 시간 동작 취소. 서보는 마지막 목표각을 유지하며 새 동작을 시작하지 않는다.',
+                '',
+                '[반복 수신·정지 처리]',
+                '시작 시 이동 모터는 정지 상태로 둔다. 등록되지 않은 값이나 빈 데이터는 이동을 정지시키고 진행 동작을 취소한다.',
+                mode === 'hand'
+                    ? '같은 ID가 반복되면 수신 시각만 갱신한다. 같은 ID의 시간 동작을 재시작하거나 종료 시각을 연장하지 않는다. 시간 동작 완료 후에도 같은 ID로 재시작하지 않는다. 다른 유효 ID 또는 stop을 거친 뒤에만 다시 실행한다. 유효 데이터가 1000ms 동안 없으면 이동 모터 정지 및 진행 동작 취소; 재개하려면 stop 또는 다른 유효 ID가 필요하다.'
+                    : '각 새 음성 명령 수신은 한 번의 실행 요청이다. 동일 문자열도 다음 음성 세션에서 다시 수신하면 다시 실행할 수 있다. 웹앱이 주기적으로 명령을 보낸다고 가정하지 않는다. 모든 이동에는 동작표의 최대 시간을 적용한다.',
+                '새로운 유효 명령은 기존 동작을 취소하고 적용한다. stop과 Bluetooth 연결 해제는 항상 우선 처리한다. 연결이 복구되어도 자동으로 이전 이동을 재개하지 않는다.',
+                'UART 이벤트에서 긴 basic.pause나 대기 루프를 실행하지 않는다. 수신 이벤트는 명령/상태를 갱신하고, basic.forever와 input.runningTime() 기반 종료 시각으로 실행·정지를 관리한다. 정지 이후 이전 타이머가 새 동작을 덮어쓰지 않도록 한다.',
+                '',
+                '[바이브코딩 스튜디오 구현 규칙]',
+                '스튜디오에 제공된 aiPonybot 확장 정의와 MakeCode 기본 API만 사용한다. 임의의 함수나 센서를 만들지 않는다.',
+                '전후진/제자리 회전: aiPonybot.runNormal와 aiPonybot.DirectionControl.Forward/Backward/CounterClockwise/Clockwise.',
+                '옆 이동: aiPonybot.runMecanum와 aiPonybot.Mecanum.Left/Right. 이동 정지: aiPonybot.stopAllMotors().',
+                '서보: aiPonybot.servo(aiPonybot.Servo.Servo1 등의 선택 번호, 목표각). stopAllMotors가 서보 전원을 끈다고 가정하지 않는다.',
+                '변수는 파일 맨 위에 let과 초기값으로 선언하고, 이벤트/루프 안에서 let을 새로 선언하지 않는다. 명시적 타입 표기 없이 타입 추론을 사용한다. basic.onStart()를 만들지 않는다.',
+                '추가 LED/센서 기능은 요청하지 않았으므로 초기화하거나 추가하지 않는다.',
+                '한국어로 짧게 설명한 뒤 전체 MakeCode 코드를 제공한다. 필요한 확장과 블루투스 설정, ID/전송값 일치 여부를 확인하는 시험 순서를 설명한다.'
+            ].join('\n');
+        }
+        // PROMPT_BUILDER_END
+
+
+        const PromptBuilder = ({ context, mode, hardware, onNext, onBack }) => {
+            const freshRule = (value) => ({ value, note: '', action: hardware === 'servo' ? 'servo' : 'forward', speed: '40', seconds: '1', port: '1', angle: '90' });
+            const [rules, setRules] = useState([freshRule(mode === 'hand' ? 'ID1' : 'forward')]);
+            const [generated, setGenerated] = useState('');
+            const [generatedFrom, setGeneratedFrom] = useState('');
+            const [copyMessage, setCopyMessage] = useState('');
+            const promptRef = useRef(null);
+            const signature = JSON.stringify({ context, mode, hardware, rules });
+            const stale = !!generated && generatedFrom !== signature;
+            const errors = validateRules(mode, hardware, rules);
+            const edit = (index, field, value) => {
+                setRules(old => old.map((r, i) => i === index ? { ...r, [field]: value } : r));
+                setCopyMessage('');
+            };
+            const add = () => {
+                let n = 1;
+                while (rules.some(r => r.value === (mode === 'hand' ? 'ID' + n : 'command' + n))) n++;
+                setRules([...rules, freshRule(mode === 'hand' ? 'ID' + n : 'command' + n)]);
+                setCopyMessage('');
+            };
+            const generate = () => {
+                if (errors.length) return;
+                setGenerated(buildPrompt(context, mode, hardware, rules));
+                setGeneratedFrom(signature); setCopyMessage('');
+            };
+            const copy = async () => {
+                if (!generated || stale) return;
+                try {
+                    if (!navigator.clipboard || !window.isSecureContext) throw new Error('fallback');
+                    await navigator.clipboard.writeText(generated);
+                    setCopyMessage('프롬프트를 복사했어요.');
+                } catch (e) {
+                    promptRef.current.focus(); promptRef.current.select();
+                    try {
+                        if (!document.execCommand('copy')) throw new Error('manual');
+                        setCopyMessage('프롬프트를 복사했어요.');
+                    } catch (err) { setCopyMessage('자동 복사가 어려워요. 선택된 내용을 Ctrl+C 또는 길게 눌러 복사해주세요.'); }
+                }
+            };
+            const fieldClass = 'w-full rounded-xl border border-gray-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-yellow-400 outline-none';
+            return (
+                <div className="w-full animate-fade-in">
+                    <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+                        <h2 className="font-black text-xl mb-2">3단계. 프롬프트 만들기</h2>
+                        <p className="text-sm text-gray-600">블루투스로 어떤 데이터가 들어오면 어떻게 움직일지 정해보세요.</p>
+                        <p className="text-xs text-gray-500 mt-2">프롬프트는 이 화면에서 규칙을 조합해 만듭니다. AI API나 접속키가 필요하지 않습니다.</p>
+                    </div>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mb-6">
+                        <h3 className="font-bold mb-2">우리 팀의 핵심 설계 원칙</h3>
+                        <p className="text-sm leading-7">{mode === 'hand' ? 'KNN 핸드 포즈 분류' : '음성 인식'}와 {hardware === 'servo' ? '서보 모터' : '포니봇 모터'}를 활용하여, <b>{context.situation}</b> 상황의 <b>{context.problem}</b> 문제를 해결합니다.</p>
+                        <button onClick={onBack} className="text-sm underline mt-3">설계 수정하기</button>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+                        <h3 className="font-bold mb-3">{mode === 'hand' ? 'KNN 핸드 포즈 → 학습 ID → 동작' : '음성 명령 → 전송 문자열 → 동작'}</h3>
+                        <p className="text-sm text-gray-600 leading-6 mb-3">{mode === 'hand'
+                            ? 'KNN 핸드 포즈 앱에서 학습한 ID를 그대로 입력하세요. 손 모양 설명은 참고용이며 전송되는 값은 ID1, ID2 등입니다. 삭제한 ID 번호는 다시 붙지 않을 수 있으니 실제 화면과 맞춰주세요.'
+                            : '전진·앞으로·출발은 forward, 뒤로·후진은 backward, 좌회전은 left, 우회전은 right, 정지는 stop으로 전송됩니다. 사용자 지정값은 음성 앱의 명령어 데이터셋에도 똑같이 등록해주세요.'}</p>
+                        <a href={mode === 'hand' ? 'https://boundary-x.github.io/ai_handpose_recognition/' : 'https://boundary-x.github.io/voice_recognition_v2/'} target="_blank" rel="noreferrer" className="text-sm underline font-bold">{mode === 'hand' ? 'KNN 핸드 포즈 분류 앱 열기' : '음성 인식 앱 열기'} ↗</a>
+                    </div>
+                    <div className="space-y-4">
+                        {rules.map((r, i) => (
+                            <fieldset key={i} className="bg-white border border-gray-200 rounded-2xl p-5">
+                                <legend className="px-2 font-bold">동작 규칙 {i + 1}</legend>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <label className="text-xs font-bold space-y-2"><span>블루투스 수신값</span>
+                                        <input aria-label={'규칙 ' + (i + 1) + ' 수신값'} list={mode === 'voice' ? 'voice-values' : undefined} value={r.value} onChange={e => edit(i, 'value', e.target.value)} placeholder={mode === 'hand' ? 'ID1' : 'forward'} className={fieldClass} maxLength={20} />
+                                    </label>
+                                    <label className="text-xs font-bold space-y-2"><span>{mode === 'hand' ? '손 모양 설명 (선택)' : '말할 명령어 설명 (선택)'}</span>
+                                        <input value={r.note} onChange={e => edit(i, 'note', e.target.value)} placeholder={mode === 'hand' ? '예: 손바닥 펴기' : '예: 출발'} className={fieldClass} maxLength={100} />
+                                    </label>
+                                    <label className="text-xs font-bold space-y-2"><span>포니봇 동작</span>
+                                        <select aria-label={'규칙 ' + (i + 1) + ' 동작'} value={r.action} onChange={e => edit(i, 'action', e.target.value)} className={fieldClass}>
+                                            {Object.entries(ACTIONS).filter(([key]) => hardware === 'servo' ? ['servo', 'stop'].includes(key) : key !== 'servo').map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                                        </select>
+                                    </label>
+                                    {r.action === 'servo' ? <React.Fragment>
+                                        <label className="text-xs font-bold space-y-2"><span>서보 번호</span><select value={r.port} onChange={e => edit(i, 'port', e.target.value)} className={fieldClass}>{[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}번</option>)}</select></label>
+                                        <label className="text-xs font-bold space-y-2"><span>목표 각도 (0~180°)</span><input type="number" min="0" max="180" value={r.angle} onChange={e => edit(i, 'angle', e.target.value)} className={fieldClass} /></label>
+                                    </React.Fragment> : r.action !== 'stop' && <React.Fragment>
+                                        <label className="text-xs font-bold space-y-2"><span>속도 값 (1~100)</span><input type="number" min="1" max="100" value={r.speed} onChange={e => edit(i, 'speed', e.target.value)} className={fieldClass} /></label>
+                                        <label className="text-xs font-bold space-y-2"><span>최대 동작 시간 (0.1~10초)</span><input type="number" min="0.1" max="10" step="0.1" value={r.seconds} onChange={e => edit(i, 'seconds', e.target.value)} className={fieldClass} /></label>
+                                    </React.Fragment>}
+                                </div>
+                                <button onClick={() => { setRules(rules.filter((_, j) => j !== i)); setCopyMessage(''); }} className="mt-4 text-sm text-gray-500 underline" aria-label={'규칙 ' + (i + 1) + ' 삭제'}>규칙 삭제</button>
+                            </fieldset>
+                        ))}
+                    </div>
+                    <datalist id="voice-values">{VOICE_VALUES.filter(v => v !== 'stop').map(v => <option key={v} value={v} />)}</datalist>
+                    <button onClick={add} disabled={rules.length >= 20} className="my-4 px-6 py-3 rounded-full border-2 border-black font-bold text-sm disabled:opacity-40">+ 동작 규칙 추가</button>
+                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-sm leading-6 mb-6">
+                        <b>자동으로 포함되는 정지 규칙</b>
+                        <p><code>stop</code> 수신·연결 해제 시 이동 정지 및 진행 동작 취소. 서보는 마지막 목표각을 유지합니다.</p>
+                        <p>{mode === 'hand' ? '같은 ID 반복 수신으로 동작 시간을 늘리지 않습니다. 1초 동안 유효 데이터가 없어도 이동을 멈춥니다. 같은 동작을 다시 하려면 다른 ID 또는 stop을 먼저 보내세요.' : '음성 명령은 수신할 때마다 한 번 실행합니다. 다음 음성 입력에서 같은 명령을 다시 보내면 다시 실행합니다.'}</p>
+                    </div>
+                    {errors.length > 0 && <ul role="alert" className="text-sm text-red-700 mb-4 list-disc pl-5">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
+                    <button onClick={generate} disabled={errors.length > 0} className="px-8 py-3 bx-pill-btn bx-btn-black disabled:opacity-40">프롬프트 만들기</button>
+                    {generated && <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-5">
+                        <label htmlFor="generated-prompt" className="block font-bold mb-2">생성된 프롬프트</label>
+                        {stale && <p role="status" className="text-sm text-orange-700 mb-3">내용이 바뀌었어요. 프롬프트 만들기를 다시 눌러주세요.</p>}
+                        <textarea ref={promptRef} id="generated-prompt" readOnly value={generated} className="w-full h-80 p-4 border rounded-xl text-sm leading-6 bg-gray-50" />
+                        <button onClick={copy} disabled={stale} className="mt-3 px-6 py-3 bx-pill-btn bx-btn-black disabled:opacity-40">프롬프트 복사</button>
+                        <p role="status" aria-live="polite" className="text-sm mt-2">{copyMessage}</p>
+                    </div>}
+                    <div className="flex flex-wrap justify-center gap-3 mt-8">
+                        <button onClick={onBack} className="px-6 py-3 border rounded-full bg-white font-bold">이전 단계</button>
+                        <button onClick={onNext} disabled={!generated || stale} className="px-8 py-3 bx-pill-btn bx-btn-black disabled:opacity-40">4단계. 프로젝트 완성으로 →</button>
+                    </div>
+                </div>
+            );
+        };
 
         const App = () => {
             const [step, setStep] = useState(0); 
@@ -176,12 +365,12 @@
                                     <div className="flex flex-col gap-2 mt-6 mb-8">
                                         <div className="flex items-center justify-center gap-2 text-sm font-bold bg-white border border-gray-200 w-fit mx-auto px-4 py-1.5 rounded-full shadow-sm">
                                             <i className="fa-solid fa-list-check text-black"></i>
-                                            <span>로봇 리믹스 챌린지 미션 활동 3단계 프로세스</span>
+                                            <span>로봇 리믹스 챌린지 미션 활동 4단계 프로세스</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 text-left">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 text-left">
                                     <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                                         <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold mb-5 shadow-lg">1</div>
                                         <h3 className="font-black text-lg mb-2">카드 뽑기</h3>
@@ -194,8 +383,13 @@
                                     </div>
                                     <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                                         <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold mb-5 shadow-lg">3</div>
+                                        <h3 className="font-black text-lg mb-2">프롬프트 만들기</h3>
+                                        <p className="text-xs text-gray-500 leading-relaxed">수신 데이터별 동작을 정하고 스튜디오에 붙여넣을 프롬프트를 만듭니다.</p>
+                                    </div>
+                                    <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm">
+                                        <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold mb-5">4</div>
                                         <h3 className="font-black text-lg mb-2">로봇 완성</h3>
-                                        <p className="text-xs text-gray-500 leading-relaxed">설계를 구체화하고 바이브코딩 스튜디오를 활용해 프로젝트를 실현합니다.</p>
+                                        <p className="text-xs text-gray-500 leading-relaxed">프롬프트로 코드를 생성하고 포니봇에서 동작을 확인합니다.</p>
                                     </div>
                                 </div>
 
@@ -210,15 +404,15 @@
                                 <div className="w-full max-w-2xl mb-12">
                                     <div className="flex items-center justify-between relative">
                                         <div className="absolute left-0 top-5 w-full h-0.5 bg-gray-200 -z-10"></div>
-                                        <div className="absolute left-0 top-5 h-0.5 bg-black -z-10 transition-all duration-500" style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}></div>
+                                        <div className="absolute left-0 top-5 h-0.5 bg-black -z-10 transition-all duration-500" style={{ width: ((step - 1) / 3 * 100) + '%' }}></div>
                                         
-                                        {[1, 2, 3].map((s) => (
+                                        {[1, 2, 3, 4].map((s) => (
                                             <div key={s} className="flex flex-col items-center gap-2">
                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all ${step >= s ? 'bg-black border-black text-white shadow-lg' : 'bg-white border-gray-200 text-gray-400'}`}>
                                                     {s}
                                                 </div>
                                                 <span className={`text-[11px] font-bold ${step >= s ? 'text-black' : 'text-gray-400'}`}>
-                                                    {s === 1 ? '카드 뽑기' : s === 2 ? '프로젝트 설계' : '프로젝트 완성'}
+                                                    {s === 1 ? '카드 뽑기' : s === 2 ? '프로젝트 설계' : s === 3 ? '프롬프트 만들기' : '프로젝트 완성'}
                                                 </span>
                                             </div>
                                         ))}
@@ -429,18 +623,28 @@
                                             </button>
                                             
                                             <button onClick={nextStep} disabled={!isStep2Complete} className={`px-12 py-3.5 bx-pill-btn text-sm shadow-xl flex items-center justify-center gap-2 transition-all ${isStep2Complete ? 'bx-btn-black' : 'bg-gray-200 text-gray-400 cursor-not-allowed border-none shadow-none'}`}>
-                                                설계 완료! 3단계 이동 <i className="fa-solid fa-check"></i>
+                                                설계 완료! 프롬프트 만들기 <i className="fa-solid fa-check"></i>
                                             </button>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Step 3 */}
-                                {step === 3 && (
+                                {/* Prompt builder stays mounted when revisiting the design or completion. */}
+                                {step >= 2 && intelCard && funcCard && sitCard && (
+                                    <div className="w-full" hidden={step !== 3}>
+                                        <PromptBuilder key={intelCard.name + funcCard.name}
+                                            context={{ situation: sitCard.name, people: decompPeople, objects: decompObject, environment: decompEnv, problem: painPoint }}
+                                            mode={intelCard.name.includes('음성') ? 'voice' : 'hand'}
+                                            hardware={funcCard.name.includes('서보') ? 'servo' : 'motor'}
+                                            onBack={() => setStep(2)} onNext={nextStep} />
+                                    </div>
+                                )}
+                                {/* Step 4 */}
+                                {step === 4 && (
                                     <div className="w-full animate-fade-in flex flex-col items-center">
                                         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-10 shadow-sm w-full">
                                             <h2 className="font-black text-lg mb-2 flex items-center gap-2">
-                                                <i className="fa-solid fa-rocket"></i> 3단계. 로봇 프로젝트 완성
+                                                <i className="fa-solid fa-rocket"></i> 4단계. 로봇 프로젝트 완성
                                             </h2>
                                             <p className="text-sm text-gray-500 leading-relaxed">
                                                 팀원들과 정의한 핵심 설계 규칙을 바탕으로 프로젝트를 구체화하고 구현해봅시다. <br/>
@@ -454,8 +658,11 @@
                                             </div>
                                             <h3 className="text-2xl font-black mb-4 tracking-tight text-white">도전을 시작할 준비가 되었나요?</h3>
                                             <p className="text-gray-400 text-sm mb-10 leading-relaxed">
-                                                설계한 규칙에 맞춰 지능형 모델을 학습시키고<br/>
-                                                로봇의 동작을 코딩하여 미션을 해결해보세요.
+                                                스튜디오에서 <b className="text-white">AI 포니봇 · 새로 코드 작성하기</b>를 선택하고<br/>
+                                                복사한 프롬프트를 붙여넣으세요.<br/>
+                                                생성된 코드를 MakeCode JavaScript에 옮기고 필요한 확장을 추가하세요.<br/>
+                                                AI 웹앱의 실제 전송값과 동작표가 같은지 확인한 뒤 시험하세요.<br/>
+                                                <span className="text-xs">프롬프트 만들기는 API를 사용하지 않으며, 스튜디오의 코드 생성에는 기존 접속키가 필요합니다.</span>
                                             </p>
                                             <a href="https://boundary-x.github.io/vibe_coding_studio/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-16 py-4 bg-yellow-300 hover:bg-yellow-400 text-black rounded-full font-black text-lg transition-all shadow-[0_10px_30px_rgba(253,224,71,0.3)]">
                                                 <i className="fa-solid fa-laptop-code"></i>
@@ -463,6 +670,7 @@
                                             </a>
                                         </div>
 
+                                        <button onClick={() => setStep(3)} className="mb-6 px-6 py-3 rounded-full border border-gray-300 bg-white font-bold text-sm">← 프롬프트 확인·복사하기</button>
                                         <button onClick={() => setStep(0)} className="text-xs font-black text-gray-400 hover:text-black transition-colors underline underline-offset-8">
                                             챌린지 프로세스 다시 확인하기
                                         </button>
@@ -523,3 +731,5 @@
     </script>
 </body>
 </html>
+
+
