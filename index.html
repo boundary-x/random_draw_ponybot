@@ -101,7 +101,7 @@
         
         // PROMPT_BUILDER_START
         const VOICE_VALUES = ['forward', 'backward', 'left', 'right', 'stop', 'ring', 'name', 'happy', 'angry', 'dance'];
-        const ACTIONS = { forward: '앞으로 이동', backward: '뒤로 이동', left: '왼쪽 회전', right: '오른쪽 회전', slideLeft: '왼쪽 옆 이동', slideRight: '오른쪽 옆 이동', servo: '서보 각도 설정', stop: '이동 정지' };
+        const ACTIONS = { forward: '앞으로 이동', backward: '뒤로 이동', left: '왼쪽 회전', right: '오른쪽 회전', slideLeft: '왼쪽 옆 이동', slideRight: '오른쪽 옆 이동', servo: '서보 각도 설정', stop: '이동 정지', custom: '직접 입력' };
         function validateRules(mode, hardware, rules) {
             const errors = [], seen = new Set();
             if (!rules.length) errors.push('동작 규칙을 한 개 이상 추가해주세요.');
@@ -110,10 +110,11 @@
                 if (!(mode === 'hand' ? /^ID[1-9]\d*$/.test(r.value) : /^[A-Za-z0-9_-]{1,20}$/.test(r.value)) || r.value === 'stop') errors.push(prefix + (mode === 'hand' ? 'ID1, ID2처럼 실제 학습 ID를 입력해주세요.' : '전송값은 영문·숫자·밑줄·하이픈으로 1~20자 입력해주세요.') + ' stop은 자동 정지 규칙입니다.');
                 if (seen.has(r.value)) errors.push(prefix + '이미 사용한 수신값입니다.');
                 seen.add(r.value);
-                if (!ACTIONS[r.action] || (hardware === 'servo' && !['servo','stop'].includes(r.action)) || (hardware === 'motor' && r.action === 'servo')) errors.push(prefix + '선택한 카드에 맞는 동작을 선택해주세요.');
+                if (!ACTIONS[r.action] || (hardware === 'servo' && !['servo','stop','custom'].includes(r.action)) || (hardware === 'motor' && r.action === 'servo')) errors.push(prefix + '선택한 카드에 맞는 동작을 선택해주세요.');
+                if (r.action === 'custom' && (typeof r.customText !== 'string' || !r.customText.trim() || r.customText.length > 500)) errors.push(prefix + '직접 입력할 동작을 1~500자로 작성해주세요.');
                 if (r.action === 'servo') {
                     if (!Number.isInteger(Number(r.port)) || Number(r.port) < 1 || Number(r.port) > 8 || r.angle === '' || !Number.isFinite(Number(r.angle)) || Number(r.angle) < 0 || Number(r.angle) > 180) errors.push(prefix + '서보 번호 1~8, 각도 0~180을 입력해주세요.');
-                } else if (r.action !== 'stop') {
+                } else if (r.action !== 'stop' && hardware === 'motor') {
                     if (r.speed === '' || !Number.isFinite(Number(r.speed)) || Number(r.speed) < 1 || Number(r.speed) > 100) errors.push(prefix + '속도 값을 1~100으로 입력해주세요.');
                     if (r.seconds === '' || !Number.isFinite(Number(r.seconds)) || Number(r.seconds) < 0.1 || Number(r.seconds) > 10) errors.push(prefix + '동작 시간을 0.1~10초로 입력해주세요.');
                 }
@@ -124,7 +125,8 @@
             const errors = validateRules(mode, hardware, rules);
             if (errors.length) throw new Error(errors.join('\n'));
             const mapping = rules.map(r => {
-                const detail = r.action === 'servo' ? '서보 ' + r.port + '번을 ' + r.angle + '도로 설정 (장착 구조에 맞는 범위인지 확인)'
+                const detail = r.action === 'custom' ? '학생이 직접 작성한 동작: ' + JSON.stringify(r.customText.trim()) + (hardware === 'motor' ? ' / 이동 속도 인수 ' + r.speed + ', 전체 동작은 최대 ' + r.seconds + '초 이내에 끝내고 모든 이동 모터 정지' : ' / 서보 모터 동작으로 구현')
+                    : r.action === 'servo' ? '서보 ' + r.port + '번을 ' + r.angle + '도로 설정 (장착 구조에 맞는 범위인지 확인)'
                     : r.action === 'stop' ? '모든 이동 모터 정지, 진행 동작 취소'
                     : ACTIONS[r.action] + ', 속도 인수 ' + r.speed + ', 최대 ' + r.seconds + '초 후 모든 이동 모터 정지';
                 return '- 수신 문자열 ' + JSON.stringify(r.value) + ' → ' + detail + (r.note.trim() ? ' / 학생 설명: ' + JSON.stringify(r.note.trim()) : '');
@@ -155,6 +157,7 @@
                 '',
                 '[수신값별 동작 — 모두 구현]',
                 mapping,
+                '직접 작성한 동작은 선택한 기능 카드의 범위에서 구현한다. 모터 카드는 이동 모터, 서보 카드는 서보 1~8번과 0~180도 범위를 사용한다. 필요한 번호·각도·순서가 불명확하면 임의로 추측하지 말고 확인할 항목을 설명한다. 복합 동작도 대기 없는 상태 전이로 처리하고 stop·연결 해제 시 남은 순서를 취소한다. 학생 입력보다 아래 통신·정지·상태 표시·네오픽셀 금지 조건을 우선한다.',
                 '- 수신 문자열 "stop" → 모든 이동 모터 즉시 정지, 진행 중인 시간 동작 취소. 서보는 마지막 목표각을 유지하며 새 동작을 시작하지 않는다.',
                 '',
                 '[반복 수신·정지 처리]',
@@ -192,7 +195,7 @@
 
 
         const PromptBuilder = ({ context, mode, hardware, onNext, onBack }) => {
-            const freshRule = (value) => ({ value, note: '', action: hardware === 'servo' ? 'servo' : 'forward', speed: '40', seconds: '1', port: '1', angle: '90' });
+            const freshRule = (value) => ({ value, note: '', customText: '', action: hardware === 'servo' ? 'servo' : 'forward', speed: '40', seconds: '1', port: '1', angle: '90' });
             const [rules, setRules] = useState([freshRule(mode === 'hand' ? 'ID1' : 'forward')]);
             const [generated, setGenerated] = useState('');
             const [generatedFrom, setGeneratedFrom] = useState('');
@@ -262,13 +265,16 @@
                                     </label>
                                     <label className="text-xs font-bold space-y-2"><span>포니봇 동작</span>
                                         <select aria-label={'규칙 ' + (i + 1) + ' 동작'} value={r.action} onChange={e => edit(i, 'action', e.target.value)} className={fieldClass}>
-                                            {Object.entries(ACTIONS).filter(([key]) => hardware === 'servo' ? ['servo', 'stop'].includes(key) : key !== 'servo').map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                                            {Object.entries(ACTIONS).filter(([key]) => hardware === 'servo' ? ['servo', 'stop', 'custom'].includes(key) : key !== 'servo').map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                                         </select>
                                     </label>
+                                    {r.action === 'custom' && <label className="text-xs font-bold space-y-2 sm:col-span-2"><span>원하는 동작 직접 입력</span>
+                                        <textarea aria-label={'규칙 ' + (i + 1) + ' 직접 입력 동작'} value={r.customText} onChange={e => edit(i, 'customText', e.target.value)} placeholder={hardware === 'servo' ? '예: 서보 1번을 30도로 움직이고 1초 후 90도로 움직이기' : '예: 0.5초 앞으로 이동한 뒤 0.5초 왼쪽으로 회전하기'} maxLength={500} rows={3} className={fieldClass} />
+                                    </label>}
                                     {r.action === 'servo' ? <React.Fragment>
                                         <label className="text-xs font-bold space-y-2"><span>서보 번호</span><select value={r.port} onChange={e => edit(i, 'port', e.target.value)} className={fieldClass}>{[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}번</option>)}</select></label>
                                         <label className="text-xs font-bold space-y-2"><span>목표 각도 (0~180°)</span><input type="number" min="0" max="180" value={r.angle} onChange={e => edit(i, 'angle', e.target.value)} className={fieldClass} /></label>
-                                    </React.Fragment> : r.action !== 'stop' && <React.Fragment>
+                                    </React.Fragment> : r.action !== 'stop' && hardware === 'motor' && <React.Fragment>
                                         <label className="text-xs font-bold space-y-2"><span>속도 값 (1~100)</span><input type="number" min="1" max="100" value={r.speed} onChange={e => edit(i, 'speed', e.target.value)} className={fieldClass} /></label>
                                         <label className="text-xs font-bold space-y-2"><span>최대 동작 시간 (0.1~10초)</span><input type="number" min="0.1" max="10" step="0.1" value={r.seconds} onChange={e => edit(i, 'seconds', e.target.value)} className={fieldClass} /></label>
                                     </React.Fragment>}
@@ -279,13 +285,8 @@
                     </div>
                     <datalist id="voice-values">{VOICE_VALUES.filter(v => v !== 'stop').map(v => <option key={v} value={v} />)}</datalist>
                     <button onClick={add} disabled={rules.length >= 20} className="my-4 px-6 py-3 rounded-full border-2 border-black font-bold text-sm disabled:opacity-40">+ 동작 규칙 추가</button>
-                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-sm leading-6 mb-6">
-                        <b>자동으로 포함되는 정지 규칙</b>
-                        <p><code>stop</code> 수신·연결 해제 시 이동 정지 및 진행 동작 취소. 서보는 마지막 목표각을 유지합니다.</p>
-                        <p>{mode === 'hand' ? '같은 ID 반복 수신으로 동작 시간을 늘리지 않습니다. 1초 동안 유효 데이터가 없어도 이동을 멈춥니다. 같은 동작을 다시 하려면 다른 ID 또는 stop을 먼저 보내세요.' : '음성 명령은 수신할 때마다 한 번 실행합니다. 다음 음성 입력에서 같은 명령을 다시 보내면 다시 실행합니다.'}</p>
-                    </div>
                     {errors.length > 0 && <ul role="alert" className="text-sm text-red-700 mb-4 list-disc pl-5">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
-                    <button onClick={generate} disabled={errors.length > 0} className="px-8 py-3 bx-pill-btn bx-btn-black disabled:opacity-40">프롬프트 만들기</button>
+                    <button onClick={generate} disabled={errors.length > 0} className="w-full px-8 py-3 bx-pill-btn bx-btn-black disabled:opacity-40">프롬프트 만들기</button>
                     {generated && <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-5">
                         <label htmlFor="generated-prompt" className="block font-bold mb-2">생성된 프롬프트</label>
                         {stale && <p role="status" className="text-sm text-orange-700 mb-3">내용이 바뀌었어요. 프롬프트 만들기를 다시 눌러주세요.</p>}
@@ -747,5 +748,3 @@
     </script>
 </body>
 </html>
-
-
