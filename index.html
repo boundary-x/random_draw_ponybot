@@ -34,6 +34,18 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .prompt-result {
+            border: 2px solid transparent;
+            background: linear-gradient(#fff, #fff) padding-box, linear-gradient(120deg, #facc15, #f59e0b, #a855f7, #38bdf8) border-box;
+            box-shadow: 0 12px 36px rgba(112, 83, 180, 0.10);
+        }
+        @keyframes promptPulse { 0%, 80%, 100% { transform: scale(.65); opacity: .35; } 40% { transform: scale(1); opacity: 1; } }
+        .prompt-dot { width: 10px; height: 10px; border-radius: 50%; background: #eab308; animation: promptPulse 1s infinite; }
+        .prompt-dot:nth-child(2) { animation-delay: .15s; }
+        .prompt-dot:nth-child(3) { animation-delay: .3s; }
+        @media (prefers-reduced-motion: reduce) {
+            .prompt-dot, .prompt-result { animation: none; }
+        }
         
         .bx-pill-btn {
             transition: all 0.2s;
@@ -63,7 +75,7 @@
     <div id="root" class="flex flex-col min-h-screen justify-between"></div>
 
     <script type="text/babel" data-presets="react,env">
-        const { useState, useRef } = React;
+        const { useState, useRef, useEffect } = React;
 
         const INTEL_CARDS = [
             { name: '음성 인식 (음성 지능)', emoji: '🗣️', desc: '사람의 음성을 인식하고 명령어를 전달해요.' },
@@ -200,6 +212,9 @@
             const [generated, setGenerated] = useState('');
             const [generatedFrom, setGeneratedFrom] = useState('');
             const [copyMessage, setCopyMessage] = useState('');
+            const [isGenerating, setIsGenerating] = useState(false);
+            const generationTimer = useRef(null);
+            useEffect(() => () => clearTimeout(generationTimer.current), []);
             const promptRef = useRef(null);
             const signature = JSON.stringify({ context, mode, hardware, rules });
             const stale = !!generated && generatedFrom !== signature;
@@ -215,9 +230,14 @@
                 setCopyMessage('');
             };
             const generate = () => {
-                if (errors.length) return;
-                setGenerated(buildPrompt(context, mode, hardware, rules));
-                setGeneratedFrom(signature); setCopyMessage('');
+                if (errors.length || isGenerating) return;
+                const result = buildPrompt(context, mode, hardware, rules);
+                setIsGenerating(true); setCopyMessage('');
+                generationTimer.current = setTimeout(() => {
+                    setGenerated(result);
+                    setGeneratedFrom(signature);
+                    setIsGenerating(false);
+                }, 1000);
             };
             const copy = async () => {
                 if (!generated || stale) return;
@@ -240,11 +260,20 @@
                         <h2 className="font-black text-xl mb-2">3단계. 프롬프트 만들기</h2>
                         <p className="text-sm text-gray-600">AI 웹앱에서 블루투스로 어떤 데이터가 들어오면 어떻게 움직일지 동작에 대한 프롬프트를 구조화해봅시다.</p>
                     </div>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mb-6">
-                        <h3 className="font-bold mb-2">우리 팀의 핵심 설계 원칙</h3>
-                        <p className="text-sm leading-7">{mode === 'hand' ? 'KNN 핸드 포즈 분류' : '음성 인식'}와 {hardware === 'servo' ? '서보 모터' : '포니봇 모터'}를 활용하여, <b>{context.situation}</b> 상황의 <b>{context.problem}</b> 문제를 해결합니다.</p>
-                        <button onClick={onBack} className="text-sm underline mt-3">설계 수정하기</button>
-                    </div>
+                    <section aria-label="우리 팀의 핵심 설계 원칙" className="bg-[#151515] text-white border-t-4 border-yellow-400 rounded-2xl p-6 sm:p-8 mb-6 shadow-lg">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+                            <h3 className="font-black text-xl sm:text-2xl text-yellow-300">우리 팀의 핵심 설계 원칙</h3>
+                            <button onClick={onBack} className="text-xs font-bold border border-gray-500 rounded-full px-4 py-2 hover:bg-white hover:text-black transition-colors">설계 수정하기</button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mb-5 text-xs sm:text-sm font-bold">
+                            <span className="rounded-full bg-white/10 px-3 py-2">{mode === 'hand' ? 'KNN 핸드 포즈 분류' : '음성 인식'}</span>
+                            <span className="rounded-full bg-white/10 px-3 py-2">{hardware === 'servo' ? '서보 모터' : '포니봇 모터'}</span>
+                            <span className="rounded-full bg-yellow-300 text-black px-3 py-2 break-words">{context.situation}</span>
+                        </div>
+                        <p className="text-sm text-gray-300 mb-2">우리가 해결할 핵심 문제</p>
+                        <p className="text-xl sm:text-2xl font-bold leading-relaxed break-words">{context.problem}</p>
+                        <p className="mt-5 pt-4 border-t border-white/20 text-sm text-gray-300 leading-6">이 설계 원칙을 바탕으로 수신값마다 포니봇이 할 동작을 정해보세요.</p>
+                    </section>
                     <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
                         <h3 className="font-bold mb-3">{mode === 'hand' ? 'KNN 핸드 포즈 → 학습 ID → 동작' : '음성 명령 → 전송 문자열 → 동작'}</h3>
                         <p className="text-sm text-gray-600 leading-6 mb-3">{mode === 'hand'
@@ -286,8 +315,12 @@
                     <datalist id="voice-values">{VOICE_VALUES.filter(v => v !== 'stop').map(v => <option key={v} value={v} />)}</datalist>
                     <button onClick={add} disabled={rules.length >= 20} className="my-4 px-6 py-3 rounded-full border-2 border-black font-bold text-sm disabled:opacity-40">+ 동작 규칙 추가</button>
                     {errors.length > 0 && <ul role="alert" className="text-sm text-red-700 mb-4 list-disc pl-5">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
-                    <button onClick={generate} disabled={errors.length > 0} className="w-full px-8 py-3 bx-pill-btn bx-btn-black disabled:opacity-40">프롬프트 만들기</button>
-                    {generated && <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-5">
+                    <button onClick={generate} disabled={errors.length > 0 || isGenerating} aria-busy={isGenerating} className="w-full px-8 py-3 bx-pill-btn bx-btn-black disabled:opacity-40">프롬프트 만들기</button>
+                    {isGenerating && <div role="status" aria-live="polite" className="mt-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-8 text-center">
+                        <div aria-hidden="true" className="flex justify-center gap-2 mb-4"><span className="prompt-dot" /><span className="prompt-dot" /><span className="prompt-dot" /></div>
+                        <p className="font-bold text-lg">프롬프트를 생성하는 중이에요</p>
+                    </div>}
+                    {generated && !isGenerating && <div className="prompt-result animate-fade-in mt-6 rounded-2xl p-5">
                         <label htmlFor="generated-prompt" className="block font-bold mb-2">생성된 프롬프트</label>
                         {stale && <p role="status" className="text-sm text-orange-700 mb-3">내용이 바뀌었어요. 프롬프트 만들기를 다시 눌러주세요.</p>}
                         <textarea ref={promptRef} id="generated-prompt" readOnly value={generated} className="w-full h-80 p-4 border rounded-xl text-sm leading-6 bg-gray-50" />
@@ -296,7 +329,7 @@
                     </div>}
                     <div className="flex flex-wrap justify-center gap-3 mt-8">
                         <button onClick={onBack} className="px-6 py-3 border rounded-full bg-white font-bold">이전 단계</button>
-                        <button onClick={onNext} disabled={!generated || stale} className="px-8 py-3 bx-pill-btn bx-btn-black disabled:opacity-40">4단계. 프로젝트 완성으로 →</button>
+                        <button onClick={onNext} disabled={!generated || stale || isGenerating} className="px-8 py-3 bx-pill-btn bx-btn-black disabled:opacity-40">4단계. 프로젝트 완성으로 →</button>
                     </div>
                 </div>
             );
